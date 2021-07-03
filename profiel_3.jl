@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Plots, HTTP, JSON
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Plots, HTTP, JSON, Luxor
 
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"# Berekening profiel 3
@@ -287,6 +287,153 @@ md"Naast `Heaviside` is er ook een methode `Piecewise` via `PyCall` aan te roepe
 # Functie roep je aan met f(t) = piecewise((5, t < 2), (10, t <= 4))
 piecewise = sympy.functions.elementary.piecewise.Piecewise
 
+# ╔═╡ 494217c7-510c-4993-b995-741d42f9d502
+md"## Momentenverloop"
+
+# ╔═╡ 1773c88b-7d9e-4617-a3b9-084e93da50b8
+md"""
+> **Superpositiebeginsel**
+>
+> Wanneer een lichaam onderworpen is aan verschillende krachtsverwerkingen ($F$, $M$, $\Delta T$...) mag men het effect ($\sigma$, $\epsilon$, $v$, $\alpha$...) van elk van die belastingen, waarbij ze afzonderlijk op het lichaam inwerken, optellen of superponeren indien een aantal geldigheidsvoorwaarden vervuld zijn:
+> - De (veralgemeende) verplaatsingen zijn klein
+> - De materialen zijn lineair elastisch en kunnen met andere woorden door de wetten van *Hooke* worden beschreven
+> - Er is **geen** energiedissipatie in de verbindingen door wrijving
+"""
+
+# ╔═╡ e7ba9264-9bff-45dc-89f8-44d09cf3898f
+md"### 1. Verdeelde belasting van $a$ tot $b$"
+
+# ╔═╡ a4f0c997-ecc2-4c2b-8643-97826de08af2
+t_1, a_1, b_1, p_1 = symbols("t a b p", real=true)
+
+# ╔═╡ d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
+begin
+	v11 = 4
+end
+
+# ╔═╡ bf202301-c645-4698-b931-6626758c569a
+md"## Theorie"
+
+# ╔═╡ 5f8aab19-c664-4460-8737-0e9c6a758a4a
+md"""
+### Virtuele arbeid
+
+> Virturele **rek**
+>    
+> Op een infinitesimaal deeltje van een staaf $dx$ worden uitwendige normaalkrachten $n$ opgelegd. Indien er geen samengang in het materiaal zou bestaan, dan wordt het mootje uiteengereten. Een virtuele, axiale verplaatsing $\delta u$ wordt opgelegd, en een vervorming $(\delta x)'$ of $d\delta x/dx$ wat ook wel gelijk is aan $\delta \varepsilon$ (virtuele **rek**) wordt aan de rechterzijde opgeteld bij de translatie.
+>
+> $-n\ \delta u + n\ (\delta u + \delta \varepsilon\ dx) + \displaystyle\sum_{i} \overrightarrow{R_i}\ \delta\overrightarrow{u_i} = 0$  
+
+> Virturele **kromming**
+>    
+> Op een infinitesimaal deeltje van een staaf $dx$ worden uitwendige krachtenkoppel $m$ opgelegd. Indien er geen samengang in het materiaal zou bestaan, dan wordt het mootje uiteengereten. Een virtuele, axiale rotatie $\delta \alpha$ wordt opgelegd, en een vervorming $(\delta \alpha)'$ of $d\delta \alpha/dx$ wat ook wel gelijk is aan $\delta \chi$ (virtuele **kromming**) wordt aan de rechterzijde van de moot opgeteld bij de rotatie.
+>
+> $-m\ \delta \alpha + m\ (\delta \alpha + \delta \chi\ dx) + \displaystyle\sum_{i} \overrightarrow{R_i}\ \delta\overrightarrow{u_i} = 0$  
+
+"""
+
+# ╔═╡ 64dafd98-afca-45b3-9aad-5697a4edc08e
+md"""
+Wens je bijvoorbeeld het moment te kennen ten gevolge van een last $F$, dan pas je het principe van virtuele arbeid toe waarbij je snijdt ter hoogte van het aangrijpingspunt van $F$ en dit vervangt door een koppel met waarde $M$ en een scharnier. De vervormingen zijn klein. De virtuele verplaatsing in $C$ is gelijk aan $x$. Volgend evenwicht schrijven we uit.
+
+$$F\cdot x = M\ \delta\theta_{AC} + M\ \delta\theta_{CB}$$
+
+Omdat de vervormingen klein zijn, kunnen we volgende hanteren:
+
+$$\delta\theta_{AC} = \arctan\left(\dfrac{x}{|AC|}\right) \stackrel{\text{kleine vervormingen}}{\approx} \dfrac{x}{|AC|}$$
+
+Dus vergelijking kan omgevormd tot volgende oplossing:
+
+$$F\cdot x = M\ \dfrac{x}{|AC|} + M\ \dfrac{x}{|CB|} = M\cdot x\ \left(\dfrac{1}{|AC|} + \dfrac{1}{|CB|}\right)$$
+
+Vervang $|AC|$ door $a$ en $|CB|$ door $b$ en los op naar $M$:
+
+$$M = F\cdot \dfrac{a\ b}{a + b}$$
+
+"""
+
+# ╔═╡ d53c7125-c433-452a-bbf6-06aa43b756f3
+@drawsvg begin
+	sethue("black")
+	endpoints = (-200, -50), (200, -50)
+	breakpoint = (-50, 0)
+	projection = (breakpoint[1], 0)
+	points1 = Point.(sort(collect(endpoints)))
+	points2 = Point.(sort(collect((endpoints..., breakpoint)))) .+ Point(0, 50)
+	@layer (
+		fontsize(20);
+		poly(points1, :stroke);
+		circle.(points1, 4, :fill);
+		Luxor.arrow(Point(-50, -110), Point(-50, -60));
+		Luxor.label("F", :E, Point(-50, -110), offset=5);
+		Luxor.arrow(Point(-50, 5), Point(-50, 45));
+		Luxor.label("x", :SE, Point(-50, 10), offset=5);
+		Luxor.label.(["A", "B"], [:NW,:NE] , points1, offset=10);
+		Luxor.label.(["A", "C", "B"], [:NW,:S,:NE] , points2, offset=10);
+	)
+	@layer (
+		setdash("shortdashed");
+		poly(points1 .+ Point(0, 50), :stroke);
+		setdash("solid");
+		poly(points2, :stroke);
+		Luxor.arrow(points2[1], 80, 0, π/10);
+		fontsize(14);
+		Luxor.label("δθ", :SE, points2[1] + Point(80, 0), offset=10);
+		sethue("firebrick"); 
+		circle.(points2, 4, :fill)
+	)
+	@layer (
+		sethue("firebrick");
+		Luxor.arrow(points2[2] - Point(60, 0), 40, -π/4, π/4);
+		Luxor.scale(-1, 1);
+		Luxor.arrow(Point((-1, 1) .* (breakpoint .- (-60, -50))), 40, -π/4, π/4);
+	)
+end (800) (300)
+
+# ╔═╡ eb54b362-4f84-405d-8414-ef35ede5d7de
+md"Afhankelijk van het gegeven die je zoekt, ga je anders gaan snijden in je constructie"
+
+# ╔═╡ 0b786728-2437-4d7f-aa68-b911c145699a
+md"""### Integralen en analogiëen van Mohr
+
+> Berekenen **doorbuiging** ten opzichte van een koorde
+> 1. Gereduceerd momentenvlak of kromming: $\chi = \dfrac{M}{\text{EI}}$
+> 2. Doorbuiging $a$ in punt $P$ t.o.v. koorde $AB$
+> 3. Stel **hulplichaam** op met lengte = koorde $AB$, eenvoudig opgelegd
+> 4. Belast hulplichaam met kracht $q = \dfrac{M}{\text{EI}}$
+> 5. Bereken **moment** hulplichaam in $P$
+> Definitie: *De verticale verplaatsing van een punt $P$, gelegen tussen de punten $A$ en $B$ van een al dan niet doorgaande, al dan niet prismatische balk, en gemeten ten opzichte van de koorde $AB$ in de belaste en dientengevolge vervormde stand, is gelijk aan het buigend moment in het punt $P$ van een eenvoudig opgelegde hulpligger $AB$, die een fictieve, gespreide belasting draagt, waarvan de amplitude in ieder punt gelijk is aan het plaatselijke, gereduceerde moment in het oospronkelijk gestel.*
+
+> Berekenen **hoekverdraaiing** ten opzichte van een koorde
+> 1. Gereduceerd momentenvlak of kromming: $\chi = \dfrac{M}{\text{EI}}$
+> 2. Hoekverdraaiing $a$ in punt $P$ t.o.v. koorde $AB$
+> 3. Stel **hulplichaam** op met lengte = koorde $AB$, eenvoudig opgelegd
+> 4. Belast hulplichaam met kracht $q = \dfrac{M}{\text{EI}}$
+> 5. Bereken **dwarskracht** hulplichaam in $P$
+> Definitie: *De wenteling van de raaklijn in een punt $P$, gelegen tussen de punten $A$ en $B$ van een al dan niet doorgaande, al dan niet prismatische balk, en gemeten ten opzichte van de koorde $AB$ in de belaste en dientengevolge vervormde stand, is op het teken na gelijk aan de dwarskracht in het punt $P$ van een eenvoudig opgelegde hulpligger $AB$, die een fictieve, gespreide belasting draagt, waarvan de amplitude in ieder punt gelijk is aan het plaatselijke, gereduceerde moment in het oorspronkelijke gestel.*
+"""
+
+# ╔═╡ ee7c93aa-73c9-4f46-8ac1-5898a3bf61bf
+md"""
+### Stelling van Green
+
+> Elastische **verticale verplaatsing** van een doorsnede ten opzichte van de raaklijn aan de elastica in een andere doorsnede
+> 1. Gereduceerd momentenvlak of kromming: $\chi = \dfrac{M}{\text{EI}}$
+> 2. Verplaatsing $a$ in punt $P$ t.o.v. doorsnede $A$
+> 3. Stel **hulplichaam** op met lengte = koorde $AP$, ingeklemd in $A$
+> 4. Belast hulplichaam met kracht $q = \dfrac{M}{\text{EI}}$
+> 5. Bereken het **moment** in $A$ van het hulplichaam
+> Definitie: *Om de elastische doorbuiging van een doorsnede $P$ ten opzichte van de raaklijn aan de elastica in een andere doorsnede $A$ te bepalen, neemt men het statisch moment van het gereduceerde momentenvlak tussen $A$ en $P$ om het punt waar men de verplaatsing wenst te kennen.*
+
+> Elastische **draaiing** van een doorsnede ten opzichte van de raaklijn aan de elastica in een andere doorsnede
+> 1. Gereduceerd momentenvlak of kromming: $\chi = \dfrac{M}{\text{EI}}$
+> 2. Draaiing $\theta$ in punt $P$ t.o.v. doorsnede $A$
+> 3. Stel **hulplichaam** op met lengte = koorde $AP$, ingeklemd in $A$
+> 4. Belast hulplichaam met kracht $q = \dfrac{M}{\text{EI}}$
+> 5. Bereken het **dwarskracht** in $A$ van het hulplichaam / oppervlakte onder het gereduceerde momentenvlak
+> Definitie: *De elastische draaiing van een doorsnede van een balk ten opzichte van een andere doorsnede wordt gegeven door de oppervlakte van het gereduceerde momentenvlak begrepen tussen beide doorsneden.*
+"""
+
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
@@ -346,3 +493,15 @@ piecewise = sympy.functions.elementary.piecewise.Piecewise
 # ╠═265977b4-0fd8-4e38-aa46-6be5bcd00420
 # ╟─6428b28d-7aa9-489d-b2b9-c08db5876342
 # ╠═7683a362-ab86-4f19-964d-e71a61e86436
+# ╟─494217c7-510c-4993-b995-741d42f9d502
+# ╟─1773c88b-7d9e-4617-a3b9-084e93da50b8
+# ╟─e7ba9264-9bff-45dc-89f8-44d09cf3898f
+# ╠═a4f0c997-ecc2-4c2b-8643-97826de08af2
+# ╠═d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
+# ╟─bf202301-c645-4698-b931-6626758c569a
+# ╟─5f8aab19-c664-4460-8737-0e9c6a758a4a
+# ╟─64dafd98-afca-45b3-9aad-5697a4edc08e
+# ╟─d53c7125-c433-452a-bbf6-06aa43b756f3
+# ╟─eb54b362-4f84-405d-8414-ef35ede5d7de
+# ╟─0b786728-2437-4d7f-aa68-b911c145699a
+# ╟─ee7c93aa-73c9-4f46-8ac1-5898a3bf61bf
