@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Plots, HTTP, JSON, Luxor
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor
 
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
@@ -27,7 +27,7 @@ md"## Indeling
 De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de resulterende belasting begroot ter hoogte van de bovenzijde van de muren van het gelijkvloers. Op onderstaande figuur wordt een onderschijdt gemaakt tussen muren met een dragende functie en deze met een niet dragende functie."
 
 # ╔═╡ 6a04789a-c42a-4ac9-8d05-ee20442ad60d
-load("indeling.jpg")
+load("./assets/img/indeling.jpg")
 
 # ╔═╡ 31851342-e653-45c2-8df6-223593a7f942
 md"## Eenvoudig opgelegde ligger met uitkraging
@@ -75,8 +75,12 @@ begin
 end
 
 # ╔═╡ 7ddacc3e-3877-4c7d-8127-b37a5e30b85a
-md"### Resultaten
-Haal de resultaten op en geef ze weer op een grafiek."
+md"""
+### Resultaten
+Haal de resultaten op en geef ze weer op een grafiek.
+
+> `lambdify` wordt gebruikt om de formules om te zetten van hun `SymPy` vorm naar een pure `Julia` vorm
+"""
 
 # ╔═╡ b70d1695-7e91-4903-a239-2a3adb4c3bd8
 md"#### Reactiekrachten"
@@ -88,6 +92,10 @@ Oplossing neerschrijven van de dwarkracht en het buigend moment"
 # ╔═╡ eaf76ba4-846a-4a49-a5b9-2a03745f2305
 md"#### Hoekverdraaiing en doorbuiging
 Oplossing neerschrijven van de hoekverdraaiing en de doorbuiging"
+
+# ╔═╡ 72062ccd-540a-4bc4-9588-d5f6539a59ea
+md"#### Maximale interne krachten
+Maximale interne krachten en hun voorkomen ($x$ abscis)"
 
 # ╔═╡ 2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 md"## *Dependencies* en hulpfuncties
@@ -257,7 +265,10 @@ begin
 end
 
 # ╔═╡ 842f1dbd-32b7-4adf-a0c8-6ca6a5fb323d
-V = V1(deel1...) + V1(deel2...)
+V = lambdify(V1(deel1...) + V1(deel2...))
+
+# ╔═╡ 90483838-2074-4ced-8629-5dc0b212828e
+tmax = find_zero(V, l / 2)
 
 # ╔═╡ ff0dd91a-a69e-4314-8afc-abbb2d80a3ae
 md"#### 1.2 Bepalen moment $M(t)$"
@@ -271,7 +282,7 @@ begin
 end
 
 # ╔═╡ 5ac2cbd5-0117-404c-a9e7-301269c7e700
-M = M1(deel1...) + M1(deel2...)
+M = lambdify(M1(deel1...) + M1(deel2...))
 
 # ╔═╡ 4e664ecf-c7b1-4f43-a17f-7b05a4fc1abd
 md"#### 1.3 Bepalen hoekverdraaiing $\alpha(t)$"
@@ -418,7 +429,7 @@ EIα2 = α2_(opl2...)
 α2 = EIα2 / EI
 
 # ╔═╡ 20d3d42b-cb8c-4263-956a-8211292b81ba
-α = α1(deel1...) + α2(deel1...)
+α = lambdify(α1(deel1...) + α2(deel1...))
 
 # ╔═╡ d974e8c6-ecf2-42ed-b004-a6e9ff7936c8
 EIv2 = v2_(opl2...)
@@ -427,21 +438,37 @@ EIv2 = v2_(opl2...)
 v2 = EIv2 / EI
 
 # ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
-v = v1(deel1...) + v2(deel1...)
+v = lambdify(v1(deel1...) + v2(deel1...))
 
 # ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
 grafiek = begin
 	rng = 0:0.05:l
 	plot1 = plot(rng, V, title="Dwarskracht", lw=2, c="lightsalmon", ylabel="kN")
 	plot2 = plot(rng, M, title="Moment", lw=2, c="dodgerblue", ylabel="kNm")
-	plot3 = plot(rng, α, title="Hoekverdraaiing", lw=2, c="grey", ylabel="rad")
-	plot4 = plot(rng, v, title="Doorbuiging", lw=2, c="purple", ylabel="mm")
+	plot3 = plot(rng, α , title="Hoekverdraaiing", lw=2, c="grey", ylabel="rad")
+	plot4 = plot(rng, v , title="Doorbuiging", lw=2, c="purple", ylabel="m")
 	plot(plot1, plot2, plot3, plot4, layout=(2,2), legend=false)
 	# ylabel!("kracht [kNm]")
 end
 
 # ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
 grafiek
+
+# ╔═╡ 642b784c-87dd-4b7b-962e-60f7170d9ad5
+overzicht = (
+	# Dwarskrachten
+	"V_min" => minimum(V.(rng)),
+	"V_max" => maximum(V.(rng)),
+	# Buigende momenten
+	"M_min" => minimum(M.(rng)),
+	"M_max" => maximum(M.(rng)),
+	# Hoekverdraaiing
+	"α_min" => minimum(α.(rng)),
+	"α_max" => maximum(α.(rng)),
+	# Doorbuiging
+	"v_min" => minimum(v.(rng)),
+	"v_max" => maximum(v.(rng)),	
+)
 
 # ╔═╡ 38db521f-f478-459e-83f7-6a7dbbd5568a
 md"""
@@ -671,6 +698,9 @@ md"""
 # ╟─eaf76ba4-846a-4a49-a5b9-2a03745f2305
 # ╠═20d3d42b-cb8c-4263-956a-8211292b81ba
 # ╠═3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
+# ╟─72062ccd-540a-4bc4-9588-d5f6539a59ea
+# ╟─90483838-2074-4ced-8629-5dc0b212828e
+# ╟─642b784c-87dd-4b7b-962e-60f7170d9ad5
 # ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75
