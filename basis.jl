@@ -235,8 +235,45 @@ deel2 = (
 md"""
 ### 1. Verdeelde belasting van $a$ tot $b$
 
-**Eenvoudig** opgelegde ligger, opwaartse kracht = positief
+**Eenvoudig** opgelegde ligger, opwaartse kracht = positief (steunpunten). Aangrijpende kracht $p$ is neerwaarts gericht.
 """
+
+# ╔═╡ c89bfe59-0c2d-423e-abac-4ea86981f479
+@drawsvg begin
+	sethue("black")
+	endpnts1 = (-200, 0), (200, 0)
+	pnt_a1 = Point(-100, 0)
+	pnt_b1 = Point(50, 0)
+	dst_1 = distance(pnt_a1, pnt_b1)
+	pnts1 = Point.(endpnts1)
+	@layer (
+		fontsize(20);
+		poly(pnts1, :stroke);
+		circle.(pnts1, 4, :fill);
+		for i = 0:10
+			Luxor.arrow(Point(-100 + 15 * i, -45), Point(-100 + 15 * i, -5));
+		end;
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts1, offset=15)
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, -45);
+		poly((pnt_a1, pnt_b1), :stroke);
+		Luxor.label("p", :N, midpoint(pnt_a1, pnt_b1), offset=15);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1...);
+		Luxor.label("L", :SW, pnts1[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1[1], pnt_b1);
+		Luxor.label("b", :SW, pnt_b1, offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1[1], pnt_a1);
+		Luxor.label("a", :SW, pnt_a1, offset=15);
+	)
+end (800) (150)
 
 # ╔═╡ 81f8c16e-9863-42b3-a91c-df51323b091f
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
@@ -275,9 +312,9 @@ md"#### 1.2 Bepalen moment $M(t)$"
 
 # ╔═╡ bf900b34-521f-4b81-914b-8ec88a7cea45
 begin
-	M11 = - R11 .* t 											# Van t: 0 -> a
-	M12 = - R11 .* t .+ p .* (t .- a) .* (t .- (t .+ a) ./ 2) 	# Van t: a -> b
-	M13 = - R12 .* (L .- t) 									# Van t: b -> L
+	M11 = R11 .* t 												# Van t: 0 -> a
+	M12 = R11 .* t .- p .* (t .- a) .* (t .- (t .+ a) ./ 2) 	# Van t: a -> b
+	M13 = R12 .* (L .- t) 										# Van t: b -> L
 	M1 = M11 .* interval(t, -1e-10, a) .+ M12 .* interval(t, a, b) .+ M13 .* interval(t, b, L)
 end
 
@@ -337,11 +374,47 @@ EIα1 = α1_(opl1...)
 # ╔═╡ 1dd87101-625f-4f80-8d0f-7a407728fb7a
 α1 = EIα1 / EI # rad
 
+# ╔═╡ 20d3d42b-cb8c-4263-956a-8211292b81ba
+α = lambdify(α1(deel1...) + α1(deel2...))
+
 # ╔═╡ de11febf-ec48-4f87-9215-0614910fcec2
 EIv1 = v1_(opl1...)
 
 # ╔═╡ d5e3126e-74fb-4f5c-a140-8cf033122adb
 v1 = EIv1 / EI # volgens gekozen lengteenheid
+
+# ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
+v = lambdify(v1(deel1...) + v1(deel2...))
+
+# ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
+grafiek = begin
+	rng = 0:0.05:l
+	plot1 = plot(rng, V, title="Dwarskracht", lw=2, c="lightsalmon", ylabel="kN")
+	plot2 = plot(rng, M, title="Moment", lw=2, c="dodgerblue", ylabel="kNm")
+	plot3 = plot(rng, α , title="Hoekverdraaiing", lw=2, c="grey", ylabel="rad")
+	plot4 = plot(rng, v , title="Doorbuiging", lw=2, c="purple", ylabel="m")
+	plot(plot1, plot2, plot3, plot4, layout=(2,2), legend=false)
+	# ylabel!("kracht [kNm]")
+end
+
+# ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
+grafiek
+
+# ╔═╡ 642b784c-87dd-4b7b-962e-60f7170d9ad5
+overzicht = (
+	# Dwarskrachten
+	"V_min" => minimum(V.(rng)),
+	"V_max" => maximum(V.(rng)),
+	# Buigende momenten
+	"M_min" => minimum(M.(rng)),
+	"M_max" => maximum(M.(rng)),
+	# Hoekverdraaiing
+	"α_min" => minimum(α.(rng)),
+	"α_max" => maximum(α.(rng)),
+	# Doorbuiging
+	"v_min" => minimum(v.(rng)),
+	"v_max" => maximum(v.(rng)),	
+)
 
 # ╔═╡ 57aff837-27ed-460d-b8e6-61c7274d1ccf
 md"""
@@ -428,47 +501,11 @@ EIα2 = α2_(opl2...)
 # ╔═╡ a9146129-509a-44f1-8e6b-0de0295e5e75
 α2 = EIα2 / EI
 
-# ╔═╡ 20d3d42b-cb8c-4263-956a-8211292b81ba
-α = lambdify(α1(deel1...) + α2(deel1...))
-
 # ╔═╡ d974e8c6-ecf2-42ed-b004-a6e9ff7936c8
 EIv2 = v2_(opl2...)
 
 # ╔═╡ 7b685a83-6541-4fd7-8d2f-502a07c252a7
 v2 = EIv2 / EI
-
-# ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
-v = lambdify(v1(deel1...) + v2(deel1...))
-
-# ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
-grafiek = begin
-	rng = 0:0.05:l
-	plot1 = plot(rng, V, title="Dwarskracht", lw=2, c="lightsalmon", ylabel="kN")
-	plot2 = plot(rng, M, title="Moment", lw=2, c="dodgerblue", ylabel="kNm")
-	plot3 = plot(rng, α , title="Hoekverdraaiing", lw=2, c="grey", ylabel="rad")
-	plot4 = plot(rng, v , title="Doorbuiging", lw=2, c="purple", ylabel="m")
-	plot(plot1, plot2, plot3, plot4, layout=(2,2), legend=false)
-	# ylabel!("kracht [kNm]")
-end
-
-# ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
-grafiek
-
-# ╔═╡ 642b784c-87dd-4b7b-962e-60f7170d9ad5
-overzicht = (
-	# Dwarskrachten
-	"V_min" => minimum(V.(rng)),
-	"V_max" => maximum(V.(rng)),
-	# Buigende momenten
-	"M_min" => minimum(M.(rng)),
-	"M_max" => maximum(M.(rng)),
-	# Hoekverdraaiing
-	"α_min" => minimum(α.(rng)),
-	"α_max" => maximum(α.(rng)),
-	# Doorbuiging
-	"v_min" => minimum(v.(rng)),
-	"v_max" => maximum(v.(rng)),	
-)
 
 # ╔═╡ 38db521f-f478-459e-83f7-6a7dbbd5568a
 md"""
@@ -724,9 +761,10 @@ md"""
 # ╟─2421b3f9-2b25-45b5-9ca7-37e65c249235
 # ╟─041cc722-eee1-4456-95bb-f2ad7c1ee771
 # ╟─e7ba9264-9bff-45dc-89f8-44d09cf3898f
+# ╟─c89bfe59-0c2d-423e-abac-4ea86981f479
 # ╟─81f8c16e-9863-42b3-a91c-df51323b091f
-# ╟─fd639425-e97f-4eb0-928b-f1479b09cae6
-# ╟─90ad790e-78a9-4a65-89ef-887d3ffcc54f
+# ╠═fd639425-e97f-4eb0-928b-f1479b09cae6
+# ╠═90ad790e-78a9-4a65-89ef-887d3ffcc54f
 # ╟─a824cc32-c7e4-471b-afa6-88facbea9eed
 # ╟─d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
 # ╟─ff0dd91a-a69e-4314-8afc-abbb2d80a3ae

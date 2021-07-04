@@ -224,8 +224,45 @@ deel2 = (
 md"""
 ### 1. Verdeelde belasting van $a$ tot $b$
 
-**Eenvoudig** opgelegde ligger, opwaartse kracht = positief
+**Eenvoudig** opgelegde ligger, opwaartse kracht = positief (steunpunten). Aangrijpende kracht $p$ is neerwaarts gericht.
 """
+
+# ╔═╡ 0c3ecb17-402b-48c6-9561-85401eccc9e8
+@drawsvg begin
+	sethue("black")
+	endpnts1 = (-200, 0), (200, 0)
+	pnt_a1 = Point(-100, 0)
+	pnt_b1 = Point(50, 0)
+	dst_1 = distance(pnt_a1, pnt_b1)
+	pnts1 = Point.(endpnts1)
+	@layer (
+		fontsize(20);
+		poly(pnts1, :stroke);
+		circle.(pnts1, 4, :fill);
+		for i = 0:10
+			Luxor.arrow(Point(-100 + 15 * i, -45), Point(-100 + 15 * i, -5));
+		end;
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts1, offset=15)
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, -45);
+		poly((pnt_a1, pnt_b1), :stroke);
+		Luxor.label("p", :N, midpoint(pnt_a1, pnt_b1), offset=15);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1...);
+		Luxor.label("L", :SW, pnts1[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1[1], pnt_b1);
+		Luxor.label("b", :SW, pnt_b1, offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts1[1], pnt_a1);
+		Luxor.label("a", :SW, pnt_a1, offset=15);
+	)
+end (800) (150)
 
 # ╔═╡ 81f8c16e-9863-42b3-a91c-df51323b091f
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
@@ -300,58 +337,6 @@ begin
 	v13 = integrate(α13, t) + D13 	# Van t: b -> L
 	v1_ = v11 .* interval(t, -1e-10, a) .+ v12 .* interval(t, a, b) .+ v13 .* interval(t, b, L)
 end
-
-# ╔═╡ 0dae1545-94db-4c2c-a6b6-6d98394c9786
-md"""
-#### 1.4 BIS Controleberekening specifiek geval
-
-Probleem aanpakken voor specifiek geval van 2 verdeelde belasting met abscis gelijk aan $a$ waar de twee opgesplitst zijn
-"""
-
-# ╔═╡ 8409d931-8bd4-4588-bcb6-a10a850e7f31
-p1, p2 = symbols("p1 p2", real=true)
-
-# ╔═╡ bfe7d862-b6a6-468d-afa6-95d949c46e3b
-Cx1, Cx2, Dx1, Dx2 = symbols("Cx1 Cx2 Dx1 Dx2", real=true)
-
-# ╔═╡ faad68d5-19f5-446f-a90d-35458fb1f433
-begin
-	αx1 = - integrate(M12(a=>0, b=>a, p=>p1) + M11(b=>L, p=>p2), t) + Cx1 	# Van t: a -> b
-	αx2 = - integrate(M13(a=>0, b=>a, p=>p1) + M12(b=>L, p=>p2), t) + Cx2 	# Van t: b -> L
-	αx_ = αx1 .* interval(t, -1e-10, a) .+ αx2 .* interval(t, a, L)
-end
-
-# ╔═╡ e209f7dc-e30c-4626-9d13-5b9411d059fd
-begin
-	vx1 = - integrate(αx1, t) + Dx1 	# Van t: a -> b
-	vx2 = - integrate(αx2, t) + Dx2 	# Van t: b -> L
-	vx_ = vx1 .* interval(t, -1e-10, a) .+ vx2 .* interval(t, a, L)
-end
-
-# ╔═╡ d1d84b34-7e49-45b0-a3ff-55a240340de6
-rvwx = [
-		# Vervormingen
-		vx1(t=>0), 
-		vx1(t=>a) - vx2(t=>a),  
-		vx2(t=>L), 
-		# Hoekverdraaiingen 
-		αx1(t=>a) - αx2(t=>a)
-	]
-
-# ╔═╡ d46a0c30-985e-43af-a302-a71c17b6bade
-oplx = solve(rvwx, [Cx1, Cx2, Dx1, Dx2])
-
-# ╔═╡ 3e725ba2-bc10-41e1-9909-426bbb5aa565
-EIvx = vx_(oplx...)
-
-# ╔═╡ 1790a67c-a655-4c56-bcdf-e62d98b8be32
-vx = EIvx / EI
-
-# ╔═╡ d44346f4-11e9-4d65-9ad8-330e8640bf8c
-vx__ = lambdify(vx(a=>2.473, p1=>39.35, p2=>23.984, L=>3.995, EI=>EI_))
-
-# ╔═╡ 69fc1f35-abc4-4a70-a078-8d4b0a9b4bf7
-maximum(vx__.(0:0.001:3.995))
 
 # ╔═╡ 5b6e5cbb-c629-468a-994d-144868734d87
 md"#### 1.5 Kinematische randvoorwaarden
@@ -764,6 +749,7 @@ md"""
 # ╟─2421b3f9-2b25-45b5-9ca7-37e65c249235
 # ╟─041cc722-eee1-4456-95bb-f2ad7c1ee771
 # ╟─e7ba9264-9bff-45dc-89f8-44d09cf3898f
+# ╟─0c3ecb17-402b-48c6-9561-85401eccc9e8
 # ╟─81f8c16e-9863-42b3-a91c-df51323b091f
 # ╟─fd639425-e97f-4eb0-928b-f1479b09cae6
 # ╟─90ad790e-78a9-4a65-89ef-887d3ffcc54f
@@ -773,7 +759,7 @@ md"""
 # ╟─bf900b34-521f-4b81-914b-8ec88a7cea45
 # ╟─4e664ecf-c7b1-4f43-a17f-7b05a4fc1abd
 # ╟─b2668eda-4d7e-4e86-9862-86e0f81b07a7
-# ╠═0ce3368c-17ce-4187-9961-37a4cecefa34
+# ╟─0ce3368c-17ce-4187-9961-37a4cecefa34
 # ╟─04189ae1-9ae4-4bec-b70c-e1416319309a
 # ╟─1dd87101-625f-4f80-8d0f-7a407728fb7a
 # ╟─c41fc340-b391-4b57-906a-942747f6deae
@@ -781,17 +767,6 @@ md"""
 # ╟─67d43f7e-7516-40aa-bfc4-76ac897aa125
 # ╟─de11febf-ec48-4f87-9215-0614910fcec2
 # ╟─d5e3126e-74fb-4f5c-a140-8cf033122adb
-# ╟─0dae1545-94db-4c2c-a6b6-6d98394c9786
-# ╟─8409d931-8bd4-4588-bcb6-a10a850e7f31
-# ╟─bfe7d862-b6a6-468d-afa6-95d949c46e3b
-# ╟─faad68d5-19f5-446f-a90d-35458fb1f433
-# ╟─e209f7dc-e30c-4626-9d13-5b9411d059fd
-# ╟─d1d84b34-7e49-45b0-a3ff-55a240340de6
-# ╟─d46a0c30-985e-43af-a302-a71c17b6bade
-# ╟─3e725ba2-bc10-41e1-9909-426bbb5aa565
-# ╟─1790a67c-a655-4c56-bcdf-e62d98b8be32
-# ╠═d44346f4-11e9-4d65-9ad8-330e8640bf8c
-# ╠═69fc1f35-abc4-4a70-a078-8d4b0a9b4bf7
 # ╟─5b6e5cbb-c629-468a-994d-144868734d87
 # ╟─4454c124-23af-4c6b-8931-5fe697f05d4c
 # ╟─9b4fefd7-94ff-434b-b484-776a0f799f40
