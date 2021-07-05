@@ -141,7 +141,7 @@ begin
 end
 
 # ╔═╡ 8d61adab-5ddb-483a-8330-21fc94613bd1
-db = SQLite.DB("db.sqlite")
+db = SQLite.DB("assets/db/db.sqlite")
 
 # ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
 begin
