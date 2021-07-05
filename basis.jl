@@ -14,13 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor
-
-# ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
-md"""
-# Berekening profiel
-$(html\"<mark>Algemene beschrijving</mark>\")
-"""
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -43,22 +37,8 @@ Definiëer de randvoorwaarden of *Boundary Conditions* $(\text{BC})$. Voor een *
 # ╔═╡ 78a060bd-f930-4205-a956-abbb72797c1c
 md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worden"
 
-# ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
-begin
-	profielkeuze = @bind profiel Select(["HEB200", "HEA220"])
-	md"Keuze profiel: $profielkeuze"
-end
-
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
-
-# ╔═╡ 97ba93ff-880a-4625-9bf8-da385db57568
- begin
-	# Haal informatie van het profiel op via een API
-	response = HTTP.get("https://nodered.eetietshekken.xyz/section/$profiel")
-	text = String(response.body)
-	info = JSON.parse(text)
-end
 
 # ╔═╡ 03e08a96-29c2-4921-b107-ded3f7dce079
 EI_ = 210000 * info["Iy"] / 10^9 # kNm2
@@ -100,6 +80,39 @@ Maximale interne krachten en hun voorkomen ($x$ abscis)"
 # ╔═╡ 2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 md"## *Dependencies* en hulpfuncties
 Hieronder worden de *dependencies* geladen en de hulpfuncties gedefinieerd"
+
+# ╔═╡ 06bc1b2b-f26a-47c6-83b7-a639e17f3bc2
+begin
+	DotEnv.config()
+	md"Laad de *environment variables* met `DotEnv.config()`"
+end
+
+# ╔═╡ 8d61adab-5ddb-483a-8330-21fc94613bd1
+db = SQLite.DB("db.sqlite")
+
+# ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
+begin
+	sections = DBInterface.execute(db, "SELECT name FROM sections") |> DataFrame
+	select_profiel = @bind profiel_naam Select(sections[!, "name"])
+	select_staalkwaliteit = @bind staalkwaliteit Select(["S235", "S355"])
+	select_grenstoestand = @bind grenstoestand Select(["UGT", "GGT"])
+	md"""
+	Keuze profiel: $select_profiel
+	
+	Keuze staalkwaliteit: $select_staalkwaliteit
+	
+	Keuze grenstoestand: $select_grenstoestand
+	"""
+end
+
+# ╔═╡ 43453fa0-512b-4960-a0bb-fb44e538b6a6
+profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$profiel_naam';") |> DataFrame
+
+# ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
+md"""
+# Berekening $naam - $profiel
+Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
+"""
 
 # ╔═╡ 91f347d9-e9b6-4e53-9093-20d1987f8ca8
 md"Start de `plotly` backend"
@@ -218,7 +231,7 @@ deel1 = (
 	a => 0,
 	b => x,
 	L => l,
-	p => 20,
+	p => grenstoestand == "GGT" ? 20 : 45,
 	EI => EI_
 )
 
@@ -227,7 +240,7 @@ deel2 = (
 	a => x,
 	b => l,
 	L => l,
-	p => 10,
+	p => grenstoestand == "GGT" ? 10 : 15,
 	EI => EI_
 )
 
@@ -329,9 +342,9 @@ C11, C12, C13 = symbols("C_1 C_2 C_3", real=true)
 
 # ╔═╡ 0ce3368c-17ce-4187-9961-37a4cecefa34
 begin
-	α11 = - integrate(M11, t) + C11 	# Van t: 0 -> a
-	α12 = - integrate(M12, t) + C12 	# Van t: a -> b
-	α13 = - integrate(M13, t) + C13 	# Van t: b -> L
+	α11 = integrate(M11, t) + C11 	# Van t: 0 -> a
+	α12 = integrate(M12, t) + C12 	# Van t: a -> b
+	α13 = integrate(M13, t) + C13 	# Van t: b -> L
 	α1_ = α11 .* interval(t, -1e-10, a) .+ α12 .* interval(t, a, b) .+ α13 .* interval(t, b, L)
 end
 
@@ -401,7 +414,7 @@ end
 grafiek
 
 # ╔═╡ 642b784c-87dd-4b7b-962e-60f7170d9ad5
-overzicht = (
+overzicht = Dict(
 	# Dwarskrachten
 	"V_min" => minimum(V.(rng)),
 	"V_max" => maximum(V.(rng)),
@@ -416,12 +429,70 @@ overzicht = (
 	"v_max" => maximum(v.(rng)),	
 )
 
+# ╔═╡ 882a3f47-b9f0-4a92-98b2-881f8ce84f6d
+overzicht
+
+# ╔═╡ 6fd851f5-87f8-402c-ab64-004251404491
+begin 
+	controle_ggt_check2 = true
+	controle_ggt_check2 = overzicht["v_max"] <= l/500
+	controle_ugt_check1 = true
+	md"""
+	### Controle
+	Controle van de voorwaarden in **GGT** en **UGT**. Bepalend zijn in het desbetreffende geval de doorsnedecontroles in **GGT**. Geen stabiliteitscontrole (*Torsional Lateral Buckling*, *Web Crippling*, ...) zijn momenteel uitgevoerd.
+
+	Definitie (zie ook `NBN B03-003`):
+	-  $\delta_{0}$: tegenpijl balk in onbelaste toestand
+	-  $\delta_{1}$: ogenblikkelijke verandering t.g.v. perm. belastingen
+	-  $\delta_{2}$: toename onder invloed van variabele belsting (kar. geval)
+	-  $\delta_{max} = \delta_{1} + \delta_{2} - \delta_{0}$
+
+	Controles in **GGT**
+	1. Max 80% van $f_{yd}$ in de meest getrokken/gedrukte vezel
+	2. Vervormingen van de ligger beperkt tot $L/500$ voor $\delta_{2}$ en $L/400$ voor $\delta_{max}$. 
+	   - Toegelaten vervorming $(l/500*1000) mm en optredende (**GGT** Kar) $(round(overzicht["v_max"], digits=2)*1000) mm
+
+	Controles in **UGT**
+	1. Doorsnedecontrole $UC = \dfrac{M_{Ed}}{M_{Rd}}$ met $M_{Rd} = W_{el;y}\ f_{yd}$ 
+
+	"""
+end
+
 # ╔═╡ 57aff837-27ed-460d-b8e6-61c7274d1ccf
 md"""
 ### 2. Puntlast $F$ ter hoogte van abscis $a$
 
 **Eenvoudig** opgelegde ligger, reactiekracht opwaarts = positief, aangrijpende kracht neerwaarts = positief 
 """
+
+# ╔═╡ 1fbb3eff-fa40-4beb-9c05-ae03887d75cd
+@drawsvg begin
+	sethue("black")
+	endpnts2 = (-200, 0), (200, 0)
+	pnt_a2 = Point(-40, 0)
+	pnts2 = Point.(endpnts1)
+	@layer (
+		fontsize(20);
+		poly(pnts2, :stroke);
+		circle.(pnts2, 4, :fill);
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts2, offset=15)	
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, -45);
+		Luxor.arrow(pnt_a2, pnt_a2 + (0, 40));
+		Luxor.label("F", :E, pnt_a2, offset=5);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts2...);
+		Luxor.label("L", :SW, pnts2[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts2[1], pnt_a2);
+		Luxor.label("a", :SW, pnt_a2, offset=15);
+	)
+end (800) (150)
 
 # ╔═╡ fd50008b-367d-407f-8044-ee322eb634d8
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
@@ -716,11 +787,13 @@ md"""
 # ╟─31851342-e653-45c2-8df6-223593a7f942
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
+# ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
+# ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╟─8f910bf3-5227-4113-9476-6136194a5e60
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
-# ╟─97ba93ff-880a-4625-9bf8-da385db57568
+# ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
 # ╟─03e08a96-29c2-4921-b107-ded3f7dce079
 # ╟─b5535266-c6a1-4770-be99-6d1fd79d8543
 # ╠═5d5aeb91-0507-4cab-8151-8b19389bb720
@@ -741,6 +814,8 @@ md"""
 # ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75
+# ╟─06bc1b2b-f26a-47c6-83b7-a639e17f3bc2
+# ╟─8d61adab-5ddb-483a-8330-21fc94613bd1
 # ╟─91f347d9-e9b6-4e53-9093-20d1987f8ca8
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
@@ -763,8 +838,8 @@ md"""
 # ╟─e7ba9264-9bff-45dc-89f8-44d09cf3898f
 # ╟─c89bfe59-0c2d-423e-abac-4ea86981f479
 # ╟─81f8c16e-9863-42b3-a91c-df51323b091f
-# ╠═fd639425-e97f-4eb0-928b-f1479b09cae6
-# ╠═90ad790e-78a9-4a65-89ef-887d3ffcc54f
+# ╟─fd639425-e97f-4eb0-928b-f1479b09cae6
+# ╟─90ad790e-78a9-4a65-89ef-887d3ffcc54f
 # ╟─a824cc32-c7e4-471b-afa6-88facbea9eed
 # ╟─d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
 # ╟─ff0dd91a-a69e-4314-8afc-abbb2d80a3ae
@@ -780,9 +855,10 @@ md"""
 # ╟─de11febf-ec48-4f87-9215-0614910fcec2
 # ╟─d5e3126e-74fb-4f5c-a140-8cf033122adb
 # ╟─5b6e5cbb-c629-468a-994d-144868734d87
-# ╠═4454c124-23af-4c6b-8931-5fe697f05d4c
+# ╟─4454c124-23af-4c6b-8931-5fe697f05d4c
 # ╟─9b4fefd7-94ff-434b-b484-776a0f799f40
 # ╟─57aff837-27ed-460d-b8e6-61c7274d1ccf
+# ╟─1fbb3eff-fa40-4beb-9c05-ae03887d75cd
 # ╟─fd50008b-367d-407f-8044-ee322eb634d8
 # ╟─a20cdfb2-83b4-4d76-87a7-d4e4965e15e3
 # ╟─425dbfc2-7430-4270-8d49-3a1dc818d2d4

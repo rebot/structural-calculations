@@ -14,13 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Plots, HTTP, JSON, Luxor, Roots
-
-# ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
-md"""
-# Berekening profiel *1*
-Bereking van **Profiel 1**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
-"""
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Plots, HTTP, JSON, Luxor, Roots, DotEnv, SQLite, DataFrames
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -45,9 +39,23 @@ md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worde
 
 # ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
 begin
-	profielkeuze = @bind profiel Select(["HEB200", "HEA220"])
-	md"Keuze profiel: $profielkeuze"
+	select_profiel = @bind profiel Select(["HEB200", "HEA220"])
+	select_staalkwaliteit = @bind staalkwaliteit Select(["S235", "S355"])
+	select_grenstoestand = @bind grenstoestand Select(["UGT", "GGT"])
+	md"""
+	Keuze profiel: $select_profiel
+	
+	Keuze staalkwaliteit: $select_staalkwaliteit
+	
+	Keuze grenstoestand: $select_grenstoestand
+	"""
 end
+
+# ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
+md"""
+# Berekening $naam - $profiel
+Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
+"""
 
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
@@ -89,6 +97,21 @@ Maximale interne krachten en hun voorkomen ($x$ abscis)"
 # ╔═╡ 2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 md"## *Dependencies* en hulpfuncties
 Hieronder worden de *dependencies* geladen en de hulpfuncties gedefinieerd"
+
+# ╔═╡ 93b3050b-82a7-4736-a85d-b0583695bbfc
+begin
+	DotEnv.config()
+	md"Laad de *environment variables* met `DotEnv.config()`"
+end
+
+# ╔═╡ b2e6bd8f-9be5-403c-a3cf-bf883e903cb3
+db = SQLite.DB("db.sqlite")
+
+# ╔═╡ b9e7d354-8abf-49ed-99fc-4bdda87ac60b
+df = DBInterface.execute(db, "SELECT * FROM sections WHERE name = 'HE 200 A';") |> DataFrame
+
+# ╔═╡ b44fb71a-218d-42da-b9bd-acac685ad169
+prf = c -> df[1, c]
 
 # ╔═╡ 91f347d9-e9b6-4e53-9093-20d1987f8ca8
 md"Start de `plotly` backend"
@@ -207,7 +230,7 @@ deel1 = (
 	a => 0,
 	b => 2.473,
 	L => 3.995,
-	p => 39.350, # UGT = 66.992, GGT = 39.350
+	p => grenstoestand == "GGT" ? 39.350 : 66.992, # UGT = 66.992, GGT = 39.350
 	EI => EI_
 )
 
@@ -216,7 +239,7 @@ deel2 = (
 	a => 2.473,
 	b => 3.995,
 	L => 3.995,
-	p => 23.984, # UGT = 40.475, GGT = 23.984
+	p => grenstoestand == "GGT" ? 23.984 : 40.475, # UGT = 40.475, GGT = 23.984
 	EI => EI_
 )
 
@@ -301,9 +324,9 @@ md"#### 1.2 Bepalen moment $M(t)$"
 
 # ╔═╡ bf900b34-521f-4b81-914b-8ec88a7cea45
 begin
-	M11 = - R11 .* t 											# Van t: 0 -> a
-	M12 = - R11 .* t .+ p .* (t .- a) .* (t .- (t .+ a) ./ 2) 	# Van t: a -> b
-	M13 = - R12 .* (L .- t) 									# Van t: b -> L
+	M11 = R11 .* t 											# Van t: 0 -> a
+	M12 = R11 .* t .- p .* (t .- a) .* (t .- (t .+ a) ./ 2) 	# Van t: a -> b
+	M13 = R12 .* (L .- t) 									# Van t: b -> L
 	M1 = M11 .* interval(t, -1e-10, a) .+ M12 .* interval(t, a, b) .+ M13 .* interval(t, b, L)
 end
 
@@ -318,9 +341,9 @@ C11, C12, C13 = symbols("C_1 C_2 C_3", real=true)
 
 # ╔═╡ 0ce3368c-17ce-4187-9961-37a4cecefa34
 begin
-	α11 = - integrate(M11, t) + C11 	# Van t: 0 -> a
-	α12 = - integrate(M12, t) + C12 	# Van t: a -> b
-	α13 = - integrate(M13, t) + C13 	# Van t: b -> L
+	α11 = integrate(M11, t) + C11 	# Van t: 0 -> a
+	α12 = integrate(M12, t) + C12 	# Van t: a -> b
+	α13 = integrate(M13, t) + C13 	# Van t: b -> L
 	α1_ = α11 .* interval(t, -1e-10, a) .+ α12 .* interval(t, a, b) .+ α13 .* interval(t, b, L)
 end
 
@@ -390,7 +413,7 @@ end
 grafiek
 
 # ╔═╡ c67a9e51-1bf4-4fa6-adcd-10ca2c02f6f5
-overzicht = (
+overzicht = Dict(
 	# Dwarskrachten
 	"V_min" => minimum(V.(rng)),
 	"V_max" => maximum(V.(rng)),
@@ -405,12 +428,70 @@ overzicht = (
 	"v_max" => maximum(v.(rng)),	
 )
 
+# ╔═╡ 18d9a426-edb7-4c80-a37a-1090a445a9b6
+overzicht
+
+# ╔═╡ 4bf9d2e7-83d8-4253-be15-630aed49f6c4
+begin 
+	controle_ggt_check2 = true
+	controle_ggt_check2 = overzicht["v_max"] <= 3.995/500
+	controle_ugt_check1 = true
+	md"""
+	### Controle
+	Controle van de voorwaarden in **GGT** en **UGT**. Bepalend zijn in het desbetreffende geval de doorsnedecontroles in **GGT**. Geen stabiliteitscontrole (*Torsional Lateral Buckling*, *Web Crippling*, ...) zijn momenteel uitgevoerd.
+
+	Definitie (zie ook `NBN B03-003`):
+	-  $\delta_{0}$: tegenpijl balk in onbelaste toestand
+	-  $\delta_{1}$: ogenblikkelijke verandering t.g.v. perm. belastingen
+	-  $\delta_{2}$: toename onder invloed van variabele belsting (kar. geval)
+	-  $\delta_{max} = \delta_{1} + \delta_{2} - \delta_{0}$
+
+	Controles in **GGT**
+	1. Max 80% van $f_{yd}$ in de meest getrokken/gedrukte vezel
+	2. Vervormingen van de ligger beperkt tot $L/500$ voor $\delta_{2}$ en $L/400$ voor $\delta_{max}$. 
+	   - Toegelaten vervorming $(3.995/500*1000) mm en optredende (**GGT** Kar) $(round(overzicht["v_max"], digits=2)*1000) mm
+
+	Controles in **UGT**
+	1. Doorsnedecontrole $UC = \dfrac{M_{Ed}}{M_{Rd}}$ met $M_{Rd} = W_{el;y}\ f_{yd}$ 
+
+	"""
+end
+
 # ╔═╡ 57aff837-27ed-460d-b8e6-61c7274d1ccf
 md"""
 ### 2. Puntlast $F$ ter hoogte van abscis $a$
 
 **Eenvoudig** opgelegde ligger, reactiekracht opwaarts = positief, aangrijpende kracht neerwaarts = positief 
 """
+
+# ╔═╡ 50094ed3-3427-4d87-989c-b98741f4bacc
+@drawsvg begin
+	sethue("black")
+	endpnts2 = (-200, 0), (200, 0)
+	pnt_a2 = Point(-40, 0)
+	pnts2 = Point.(endpnts1)
+	@layer (
+		fontsize(20);
+		poly(pnts2, :stroke);
+		circle.(pnts2, 4, :fill);
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts2, offset=15)	
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, -45);
+		Luxor.arrow(pnt_a2, pnt_a2 + (0, 40));
+		Luxor.label("F", :E, pnt_a2, offset=5);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts2...);
+		Luxor.label("L", :SW, pnts2[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts2[1], pnt_a2);
+		Luxor.label("a", :SW, pnt_a2, offset=15);
+	)
+end (800) (150)
 
 # ╔═╡ fd50008b-367d-407f-8044-ee322eb634d8
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
@@ -705,10 +786,14 @@ md"""
 # ╟─31851342-e653-45c2-8df6-223593a7f942
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
+# ╠═18d9a426-edb7-4c80-a37a-1090a445a9b6
+# ╟─4bf9d2e7-83d8-4253-be15-630aed49f6c4
 # ╟─8f910bf3-5227-4113-9476-6136194a5e60
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
+# ╠═b9e7d354-8abf-49ed-99fc-4bdda87ac60b
+# ╠═b44fb71a-218d-42da-b9bd-acac685ad169
 # ╟─97ba93ff-880a-4625-9bf8-da385db57568
 # ╠═03e08a96-29c2-4921-b107-ded3f7dce079
 # ╠═5d5aeb91-0507-4cab-8151-8b19389bb720
@@ -729,6 +814,8 @@ md"""
 # ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75
+# ╟─93b3050b-82a7-4736-a85d-b0583695bbfc
+# ╠═b2e6bd8f-9be5-403c-a3cf-bf883e903cb3
 # ╟─91f347d9-e9b6-4e53-9093-20d1987f8ca8
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
@@ -754,7 +841,7 @@ md"""
 # ╟─fd639425-e97f-4eb0-928b-f1479b09cae6
 # ╟─90ad790e-78a9-4a65-89ef-887d3ffcc54f
 # ╟─a824cc32-c7e4-471b-afa6-88facbea9eed
-# ╟─d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
+# ╠═d7d3fb8b-ed92-44d5-92a2-2cd6144ef4f4
 # ╟─ff0dd91a-a69e-4314-8afc-abbb2d80a3ae
 # ╟─bf900b34-521f-4b81-914b-8ec88a7cea45
 # ╟─4e664ecf-c7b1-4f43-a17f-7b05a4fc1abd
@@ -771,6 +858,7 @@ md"""
 # ╟─4454c124-23af-4c6b-8931-5fe697f05d4c
 # ╟─9b4fefd7-94ff-434b-b484-776a0f799f40
 # ╟─57aff837-27ed-460d-b8e6-61c7274d1ccf
+# ╟─50094ed3-3427-4d87-989c-b98741f4bacc
 # ╟─fd50008b-367d-407f-8044-ee322eb634d8
 # ╟─a20cdfb2-83b4-4d76-87a7-d4e4965e15e3
 # ╟─425dbfc2-7430-4270-8d49-3a1dc818d2d4
