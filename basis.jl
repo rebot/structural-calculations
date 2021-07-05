@@ -20,6 +20,12 @@ using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON
 md"## Indeling
 De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de resulterende belasting begroot ter hoogte van de bovenzijde van de muren van het gelijkvloers. Op onderstaande figuur wordt een onderschijdt gemaakt tussen muren met een dragende functie en deze met een niet dragende functie."
 
+# ╔═╡ c6f5a862-cae1-4e9c-a905-72a4122c11a7
+md"""
+!!! danger "Controleer de lastendaling"
+	Alvorens het rekenblad verder aan te vullen, is het belangrijk dat met de correcte uitgangspunten gewerkt wordt. Controleer aldus je resulterende krachten. Bekijk in de lastendaling of de **nuttige last** van $200 kN/m^2$ werd meegenomen, alsook de sneeuwlast en in welke situatie (*oud* of *nieuw*) de lasten zijn doorgerekend.
+"""
+
 # ╔═╡ 6a04789a-c42a-4ac9-8d05-ee20442ad60d
 load("./assets/img/indeling.jpg")
 
@@ -28,11 +34,35 @@ md"## Eenvoudig opgelegde ligger met uitkraging
 Eenvoudig opgelegde ligger met een gedeeltelijke uitkraging en 3 verdeelde belastingen"
 
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
-md"Naam van het profiel; $\text{naam}$ = $(@bind naam TextField(default=\"Profiel\"))"
+md"Naam van het profiel; $\text{naam}$ = $(@bind naam TextField(default=\"Basis\"))"
 
 # ╔═╡ 8f910bf3-5227-4113-9476-6136194a5e60
 md"### Randvoorwaarden of *Boundary Conditions*
 Definiëer de randvoorwaarden of *Boundary Conditions* $(\text{BC})$. Voor een **verdeelde belasting** geef je de parameters $a$, $b$, $L$ en $p$ in waarbij een *positieve* waarde van $p$ een neerwaartse belasting is. Voor een **puntbelasting** geef je de parameters $a$, $L$ en $p$ in. Ook de stijfheid $\text{EI}$."
+
+# ╔═╡ c4df4b92-a3c6-43bd-a594-9d1f8c76015f
+md"In het desbetreffende geval waarbij er **twee verdeelde belastingen** aangrijpen naast elkaar, herleidt het aantal paramaters zich tot $a$, $L$, $p_1$ en $p_2$."
+
+# ╔═╡ 3bb458cb-1a11-4102-b588-ab67cbcb28da
+md"""
+!!! note "Te definiëren parameters"
+	In de tabel met de **randvoorwaarden** (`rvw`) geef je de parameters $a$, $L$, $p_1$ en $p_2$ in, alsook de grenstoestand (`:UGT` of `:GGT`). De parameters die je moet invullen volgen uit de **generalisering** dat in een volgende paragraaf is opgesteld.
+"""
+
+# ╔═╡ 4b9528fc-554f-49df-8fb8-49613f892e36
+rvw = DataFrame([
+	(check=:UGT, a=1, L=5, p1=10, p2=30),
+	(check=:GGT, a=2, L=5, p1=20, p2=12)
+])
+
+# ╔═╡ 8d2a4c22-579c-4e92-a36d-4f5a763a9395
+md"Twee hulpvariabelen voor later..."
+
+# ╔═╡ 020b1acb-0966-4563-ab52-79a565ed2252
+isGGT = rvw.check .== :GGT
+
+# ╔═╡ 8e5c04fd-d83c-49e8-b6b1-5a6a101c56c9
+isUGT = rvw.check .== :UGT
 
 # ╔═╡ 78a060bd-f930-4205-a956-abbb72797c1c
 md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worden"
@@ -40,30 +70,23 @@ md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worde
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
 
-# ╔═╡ 03e08a96-29c2-4921-b107-ded3f7dce079
-EI_ = 210000 * info["Iy"] / 10^9 # kNm2
-
-# ╔═╡ b5535266-c6a1-4770-be99-6d1fd79d8543
-begin 
-	field_x = @bind x NumberField(0:0.05:10, default=2)
-	field_l = @bind l NumberField(0:0.05:10, default=5)
-	md"""
-	Coordinaat $x$: $field_x m
-	
-	Lengte $l$: $field_l m
-	"""
-end
-
-# ╔═╡ 7ddacc3e-3877-4c7d-8127-b37a5e30b85a
+# ╔═╡ b66c98c7-fcbc-4d04-a1dc-9452cae611a9
 md"""
-### Resultaten
-Haal de resultaten op en geef ze weer op een grafiek.
-
-> `lambdify` wordt gebruikt om de formules om te zetten van hun `SymPy` vorm naar een pure `Julia` vorm
+### Generaliseer de oplossing
+Met behulp van het **superpositiebeginsel** generaliseren we het probleem door een samenstel van de effecten, $V$, $M$, $\alpha$ en $v$, door de afzonderlijke aangrijpende belastingen te nemen.
 """
+
+# ╔═╡ 7badb26d-2b53-422e-889a-1c17e009a933
+p1, p2 = symbols("p_1 p_2", real=true)
 
 # ╔═╡ b70d1695-7e91-4903-a239-2a3adb4c3bd8
 md"#### Reactiekrachten"
+
+# ╔═╡ bdaf28c5-98f5-478d-ab0f-c886d93fabf1
+md"""
+!!! tip "Opstellen vergelijkingen"
+	Bij het opstellen van de vergelijkingen maak je gebruik van de functies `R11`, `R12`, `V1`, `M1`, `α1` en `v1` voor **gespreide lasten** en van de formules `R21`, `R22`, `V2`, `M2`, `α2` en `v2` voor een **geconcentreerde last**
+"""
 
 # ╔═╡ 03dfa81c-eaa3-4273-bfff-ab4c8159ee35
 md"#### Dwarskracht en momenten
@@ -76,6 +99,36 @@ Oplossing neerschrijven van de hoekverdraaiing en de doorbuiging"
 # ╔═╡ 72062ccd-540a-4bc4-9588-d5f6539a59ea
 md"#### Maximale interne krachten
 Maximale interne krachten en hun voorkomen ($x$ abscis)"
+
+# ╔═╡ 7ddacc3e-3877-4c7d-8127-b37a5e30b85a
+md"""
+!!! tip "lambdify"
+	`lambdify` wordt gebruikt om de formules om te zetten van hun `SymPy` vorm naar een pure `Julia` vorm
+"""
+
+# ╔═╡ 45618fab-0dc4-43c3-ab0f-d24490e88695
+rnd = (n -> round.(n, digits=3))
+
+# ╔═╡ 5fc33aba-e51e-4968-9f27-95e8d77cf9f1
+md"Onderstaande tabel bevat de **gesubstitueerde** generieke oplossingen"
+
+# ╔═╡ 0823262b-1e9d-4288-abd4-48c6f0894457
+md"Hieronder wordt een **overzicht tabel** weergegeven, waarbij de minimum en maximum waardes van de verschillende effecten, zijnde $V$, $M$, $\alpha$ en $v$ worden weergegeven"
+
+# ╔═╡ d99644ec-8b84-47a7-81a7-f87657cf3820
+md"Maak grafieken aan"
+
+# ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
+ function grafiek(r) 
+	rng = 0:0.05:r.L
+	plot_size = (200, 160)
+	plot1 = plot(rng, r.V, lw=2, c="lightsalmon", ylabel="kN", size=plot_size, legend=false)
+	plot2 = plot(rng, r.M, lw=2, c="dodgerblue", ylabel="kNm", size=plot_size, legend=false)
+	plot3 = plot(rng, r.α, lw=2, c="grey", ylabel="rad", size=plot_size, legend=false)
+	plot4 = plot(rng, r.v, lw=2, c="purple", ylabel="m", size=plot_size, legend=false)
+	return [plot1, plot2, plot3, plot4]
+	#return plot(plot1, plot2, plot3, plot4, layout=(2,2), legend=false)
+end
 
 # ╔═╡ 2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 md"## *Dependencies* en hulpfuncties
@@ -93,15 +146,12 @@ db = SQLite.DB("db.sqlite")
 # ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
 begin
 	sections = DBInterface.execute(db, "SELECT name FROM sections") |> DataFrame
-	select_profiel = @bind profiel_naam Select(sections[!, "name"])
+	select_profiel = @bind profiel_naam Select(sections[!, "name"], default="HE 200 B")
 	select_staalkwaliteit = @bind staalkwaliteit Select(["S235", "S355"])
-	select_grenstoestand = @bind grenstoestand Select(["UGT", "GGT"])
 	md"""
 	Keuze profiel: $select_profiel
 	
 	Keuze staalkwaliteit: $select_staalkwaliteit
-	
-	Keuze grenstoestand: $select_grenstoestand
 	"""
 end
 
@@ -110,15 +160,27 @@ profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$profiel
 
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
-# Berekening $naam - $profiel
+# Berekening $naam - $(profiel[1, "name"])
 Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
 """
+
+# ╔═╡ 03e08a96-29c2-4921-b107-ded3f7dce079
+buigstijfheid = 210000 * profiel[1, "Iy"] / 10^5 # kNm2
 
 # ╔═╡ 91f347d9-e9b6-4e53-9093-20d1987f8ca8
 md"Start de `plotly` backend"
 
 # ╔═╡ 60615a85-81d3-4237-8ad4-e43e856b8902
 plotly()
+
+# ╔═╡ a3aa1221-123b-4c8c-87ae-db7116c443fb
+md"Herschaal het font"
+
+# ╔═╡ 137f4eb4-9e67-4991-95e6-f31b3fa6cd11
+begin
+	Plots.scalefontsizes() 		# Reset the font
+	Plots.scalefontsizes(2/3)	# Make the font 2 times smaller
+end
 
 # ╔═╡ a841663b-a218-445f-8249-a28a766cbde5
 md"Symbolische notatie wordt gehanteerd om de basis op te stellen. Het opstellen van de vergelijken doen we via `SymPy`, bekend vanuit **Python**. Het pakket kun je aanroepen via `PyCall`, wat we ook zullen doen voor enkele functies, maar kan ook via `SymPy.jl` dat wat *Julia* specifieke syntax toevoegd om gebruik te maken van het pakket. Doordat in de *backend* verbinding wordt gelegd met een *Python* omgeving, is snelheid beperkt:
@@ -229,20 +291,21 @@ a, b, p, F, L, EI = symbols("a b p F L EI", real=true)
 # ╔═╡ 5d5aeb91-0507-4cab-8151-8b19389bb720
 deel1 = (
 	a => 0,
-	b => x,
-	L => l,
-	p => grenstoestand == "GGT" ? 20 : 45,
-	EI => EI_
+	b => a,
+	p => p1
 )
 
 # ╔═╡ a34c804b-399a-4e40-a556-1e590757d048
 deel2 = (
-	a => x,
-	b => l,
-	L => l,
-	p => grenstoestand == "GGT" ? 10 : 15,
-	EI => EI_
+	b => L,
+	p => p2
 )
+
+# ╔═╡ 109ed6b8-9220-40c4-8a40-f72a09e31228
+ mapping = r -> (a=>r.a, L=>r.L, p1=>r.p1, p2=>r.p2, EI=>buigstijfheid)
+
+# ╔═╡ 84f36442-a43b-4488-b700-8cd399c20e4f
+fn = r -> (i -> lambdify(i(mapping(r)...)))
 
 # ╔═╡ e7ba9264-9bff-45dc-89f8-44d09cf3898f
 md"""
@@ -288,6 +351,49 @@ md"""
 	)
 end (800) (150)
 
+# ╔═╡ ddeaf6b6-5e91-46fa-adf8-026bf6933dee
+@drawsvg begin
+	sethue("black")
+	endpnts = (-200, 0), (190, 0)
+	pnt_a = Point(-50, 0)
+	pnts = Point.(endpnts)
+	@layer (
+		fontsize(20);
+		poly(pnts, :stroke);
+		circle.(pnts, 4, :fill);
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts, offset=15)
+	)
+	@layer (
+		# Verdeelde last 1
+		fontsize(16);
+		Luxor.translate(0, -45);
+		for i = 0:10
+			Luxor.arrow(pnts[1] + (15 * i, 0), pnts[1] + (15 * i, 40));
+		end;
+		poly((pnts[1], pnt_a), :stroke);
+		Luxor.label("p₁", :N, midpoint(pnts[1], pnt_a), offset=15);
+	)
+	@layer (
+		# Verdeelde last 2
+		fontsize(16);
+		Luxor.translate(0, -30);
+		for i = 0:16
+			Luxor.arrow(pnt_a + (15 * i, 0), pnt_a + (15 * i, 25));
+		end;
+		poly((pnt_a, pnts[2]), :stroke);
+		Luxor.label("p₂", :N, midpoint(pnt_a1, pnts[2]), offset=15);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts...);
+		Luxor.label("L", :SW, pnts[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts[1], pnt_a);
+		Luxor.label("a", :SW, pnt_a, offset=15);
+	)
+end (800) (150)
+
 # ╔═╡ 81f8c16e-9863-42b3-a91c-df51323b091f
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
 
@@ -315,10 +421,7 @@ begin
 end
 
 # ╔═╡ 842f1dbd-32b7-4adf-a0c8-6ca6a5fb323d
-V = lambdify(V1(deel1...) + V1(deel2...))
-
-# ╔═╡ 90483838-2074-4ced-8629-5dc0b212828e
-tmax = find_zero(V, l / 2)
+V = V1(deel1...) + V1(deel2...)
 
 # ╔═╡ ff0dd91a-a69e-4314-8afc-abbb2d80a3ae
 md"#### 1.2 Bepalen moment $M(t)$"
@@ -332,7 +435,7 @@ begin
 end
 
 # ╔═╡ 5ac2cbd5-0117-404c-a9e7-301269c7e700
-M = lambdify(M1(deel1...) + M1(deel2...))
+M = M1(deel1...) + M1(deel2...)
 
 # ╔═╡ 4e664ecf-c7b1-4f43-a17f-7b05a4fc1abd
 md"#### 1.3 Bepalen hoekverdraaiing $\alpha(t)$"
@@ -388,7 +491,7 @@ EIα1 = α1_(opl1...)
 α1 = EIα1 / EI # rad
 
 # ╔═╡ 20d3d42b-cb8c-4263-956a-8211292b81ba
-α = lambdify(α1(deel1...) + α1(deel2...))
+α = α1(deel1...) + α1(deel2...)
 
 # ╔═╡ de11febf-ec48-4f87-9215-0614910fcec2
 EIv1 = v1_(opl1...)
@@ -397,36 +500,19 @@ EIv1 = v1_(opl1...)
 v1 = EIv1 / EI # volgens gekozen lengteenheid
 
 # ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
-v = lambdify(v1(deel1...) + v1(deel2...))
+v = v1(deel1...) + v1(deel2...)
 
-# ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
-grafiek = begin
-	rng = 0:0.05:l
-	plot1 = plot(rng, V, title="Dwarskracht", lw=2, c="lightsalmon", ylabel="kN")
-	plot2 = plot(rng, M, title="Moment", lw=2, c="dodgerblue", ylabel="kNm")
-	plot3 = plot(rng, α , title="Hoekverdraaiing", lw=2, c="grey", ylabel="rad")
-	plot4 = plot(rng, v , title="Doorbuiging", lw=2, c="purple", ylabel="m")
-	plot(plot1, plot2, plot3, plot4, layout=(2,2), legend=false)
-	# ylabel!("kracht [kNm]")
-end
+# ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
+opl = select(rvw, :, AsTable(:) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
 
-# ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
-grafiek
-
-# ╔═╡ 642b784c-87dd-4b7b-962e-60f7170d9ad5
-overzicht = Dict(
-	# Dwarskrachten
-	"V_min" => minimum(V.(rng)),
-	"V_max" => maximum(V.(rng)),
-	# Buigende momenten
-	"M_min" => minimum(M.(rng)),
-	"M_max" => maximum(M.(rng)),
-	# Hoekverdraaiing
-	"α_min" => minimum(α.(rng)),
-	"α_max" => maximum(α.(rng)),
-	# Doorbuiging
-	"v_min" => minimum(v.(rng)),
-	"v_max" => maximum(v.(rng)),	
+# ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
+overzicht = select(opl, 
+	AsTable(:) => ByRow(r -> [
+			r.V.(0:0.1:5),
+			r.M.(0:0.1:5),
+			r.α.(0:0.1:5),
+			r.v.(0:0.1:5)
+	] .|> (rnd ∘ extrema)) => [:V, :M, :α, :v]
 )
 
 # ╔═╡ 882a3f47-b9f0-4a92-98b2-881f8ce84f6d
@@ -435,7 +521,7 @@ overzicht
 # ╔═╡ 6fd851f5-87f8-402c-ab64-004251404491
 begin 
 	controle_ggt_check2 = true
-	controle_ggt_check2 = overzicht["v_max"] <= l/500
+	controle_ggt_check2 = abs(minimum(overzicht[isGGT, :v][1])) <= 5/500
 	controle_ugt_check1 = true
 	md"""
 	### Controle
@@ -450,13 +536,21 @@ begin
 	Controles in **GGT**
 	1. Max 80% van $f_{yd}$ in de meest getrokken/gedrukte vezel
 	2. Vervormingen van de ligger beperkt tot $L/500$ voor $\delta_{2}$ en $L/400$ voor $\delta_{max}$. 
-	   - Toegelaten vervorming $(l/500*1000) mm en optredende (**GGT** Kar) $(round(overzicht["v_max"], digits=2)*1000) mm
+	   - Toegelaten vervorming $(5/500*1000) mm en optredende (**GGT** Kar) $(abs(minimum(overzicht[isGGT, :v][1]))*1000) mm
 
 	Controles in **UGT**
 	1. Doorsnedecontrole $UC = \dfrac{M_{Ed}}{M_{Rd}}$ met $M_{Rd} = W_{el;y}\ f_{yd}$ 
 
 	"""
 end
+
+# ╔═╡ 893f1b7d-2ec4-40d4-b905-3021c943d73a
+grafieken = select(opl,
+	AsTable(:) => ByRow(r -> grafiek(r)) => [:V, :M, :α, :v]
+)
+
+# ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
+grafieken
 
 # ╔═╡ 57aff837-27ed-460d-b8e6-61c7274d1ccf
 md"""
@@ -783,23 +877,32 @@ md"""
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
+# ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
 # ╟─31851342-e653-45c2-8df6-223593a7f942
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
-# ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
+# ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╟─8f910bf3-5227-4113-9476-6136194a5e60
+# ╟─c4df4b92-a3c6-43bd-a594-9d1f8c76015f
+# ╟─ddeaf6b6-5e91-46fa-adf8-026bf6933dee
+# ╟─3bb458cb-1a11-4102-b588-ab67cbcb28da
+# ╠═4b9528fc-554f-49df-8fb8-49613f892e36
+# ╟─8d2a4c22-579c-4e92-a36d-4f5a763a9395
+# ╟─020b1acb-0966-4563-ab52-79a565ed2252
+# ╟─8e5c04fd-d83c-49e8-b6b1-5a6a101c56c9
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
 # ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
-# ╟─03e08a96-29c2-4921-b107-ded3f7dce079
-# ╟─b5535266-c6a1-4770-be99-6d1fd79d8543
-# ╠═5d5aeb91-0507-4cab-8151-8b19389bb720
-# ╠═a34c804b-399a-4e40-a556-1e590757d048
-# ╟─7ddacc3e-3877-4c7d-8127-b37a5e30b85a
+# ╠═03e08a96-29c2-4921-b107-ded3f7dce079
+# ╟─b66c98c7-fcbc-4d04-a1dc-9452cae611a9
+# ╟─7badb26d-2b53-422e-889a-1c17e009a933
+# ╟─5d5aeb91-0507-4cab-8151-8b19389bb720
+# ╟─a34c804b-399a-4e40-a556-1e590757d048
 # ╟─b70d1695-7e91-4903-a239-2a3adb4c3bd8
+# ╟─bdaf28c5-98f5-478d-ab0f-c886d93fabf1
 # ╠═04dafcd3-8568-426b-9c5f-b21fc09d5e88
 # ╠═dfd9aed7-9922-4a47-a0b9-20b0bae0ccbf
 # ╟─03dfa81c-eaa3-4273-bfff-ab4c8159ee35
@@ -809,8 +912,16 @@ md"""
 # ╠═20d3d42b-cb8c-4263-956a-8211292b81ba
 # ╠═3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
 # ╟─72062ccd-540a-4bc4-9588-d5f6539a59ea
-# ╟─90483838-2074-4ced-8629-5dc0b212828e
-# ╟─642b784c-87dd-4b7b-962e-60f7170d9ad5
+# ╟─7ddacc3e-3877-4c7d-8127-b37a5e30b85a
+# ╠═109ed6b8-9220-40c4-8a40-f72a09e31228
+# ╠═84f36442-a43b-4488-b700-8cd399c20e4f
+# ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
+# ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
+# ╟─b91ad51c-f9f7-4236-8040-1959533f1793
+# ╟─0823262b-1e9d-4288-abd4-48c6f0894457
+# ╟─40fe2709-43b6-419c-9acb-2b2763345811
+# ╟─d99644ec-8b84-47a7-81a7-f87657cf3820
+# ╠═893f1b7d-2ec4-40d4-b905-3021c943d73a
 # ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75
@@ -818,6 +929,8 @@ md"""
 # ╟─8d61adab-5ddb-483a-8330-21fc94613bd1
 # ╟─91f347d9-e9b6-4e53-9093-20d1987f8ca8
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
+# ╟─a3aa1221-123b-4c8c-87ae-db7116c443fb
+# ╠═137f4eb4-9e67-4991-95e6-f31b3fa6cd11
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
 # ╠═8d67ceaf-7303-4fb2-9577-a7fd2db6d233
 # ╟─048926fe-0fa3-44c4-8772-0e4adae576a4
