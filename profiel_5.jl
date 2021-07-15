@@ -14,11 +14,14 @@ macro bind(def, element)
 end
 
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs, Underscores
+
+# ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
+load("./assets/img/profiel_5.jpg")
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
-De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de resulterende belasting begroot ter hoogte van de bovenzijde van de muren van het gelijkvloers. Op onderstaande figuur wordt een onderschijdt gemaakt tussen muren met een dragende functie en deze met een niet dragende functie."
+De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de resulterende belasting begroot ter hoogte van de bovenzijde van de muren van het gelijkvloers. Op onderstaande figuur wordt een onderschijdt gemaakt tussen muren met een **dragende functie** (**rood**)  en deze met een **niet dragende functie** (**geel**)."
 
 # ╔═╡ c6f5a862-cae1-4e9c-a905-72a4122c11a7
 md"""
@@ -30,11 +33,20 @@ md"""
 load("./assets/img/indeling.jpg")
 
 # ╔═╡ 31851342-e653-45c2-8df6-223593a7f942
-md"## Probleemstelling: Eenvoudig opgelegde ligger met uitkraging
-Eenvoudig opgelegde ligger met een gedeeltelijke uitkraging en 3 verdeelde belastingen"
+md"## Probleemstelling: Hyperstatische ligger met 1 tussensteunpunt
+Hyperstatische ligger met 1 tussensteunpunt, 2 variabele lijnlasten en 1 puntlast. De puntbelasting is afkomstig van **profiel 1** en **profiel 2**, het samenstel uit hun reactiekrachten ter hoogte van dit steunpunt. Uit de berekening moet blijken dat de kracht direct wordt opgenomen door het steunpunt indien het zich $\infty$ stijf gedraagd. In realiteit heeft het steunpunt een axiale stijfheid, deze wordt becijferd en meegenomen in de berekening."
+
+# ╔═╡ 001ddb8b-3a71-48f8-adcc-a957741d57b1
+md"""
+!!! info "Veerstijfheid van het steunpunt"
+	Om enige veiligheid in de berekening mee te nemen, wordt het tussensteunpunt als een veer gemodelleerd, hierbij is de volgende wet van kracht: $F = k\cdot v$ waarbij $k$ voor de veerconstante staat, die op zich gelijk is aan $k = \text{EA}/L$, de axiale stijfheid van de ondersteunende kolom. Een vork van stijfheden wordt toegepast in de berekening, waarbij de axiale stijfheid wordt vermenigvuldigd met $\left[1/\sqrt{2}; 1; \sqrt{2}\right]$.
+"""
 
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
-md"Naam van het profiel; $\text{naam}$ = $(@bind naam TextField(default=\"Basis\"))"
+begin 
+	naam = "Profiel 5"
+	md"Naam van het profiel; $\text{naam}$ = $naam"
+end
 
 # ╔═╡ 542f69ac-77c5-47d7-be6c-94ba82a50ef7
 md"""
@@ -47,7 +59,74 @@ md"### Beschrijving belastingsschema
 Definiëer de randvoorwaarden of *Boundary Conditions* $(\text{BC})$. Voor een **verdeelde belasting** geef je de parameters $a$, $b$, $L$ en $p$ in waarbij een *positieve* waarde van $p$ een neerwaartse belasting is. Voor een **puntbelasting** geef je de parameters $a$, $L$ en $p$ in. Ook de stijfheid $\text{EI}$."
 
 # ╔═╡ c4df4b92-a3c6-43bd-a594-9d1f8c76015f
-md"In het desbetreffende geval waarbij er **twee verdeelde belastingen** aangrijpen naast elkaar, herleidt het aantal paramaters zich tot $a$, $L$, $p_1$ en $p_2$."
+md"""
+In het desbetreffende geval waarbij er **twee verdeelde belastingen** aangrijpen naast elkaar en een puntlast ter hoogte van het steunpunt, herleidt het aantal paramaters zich tot $a$, $x_{steun}$, $L$, $p_1$, $p_2$ en $F$. De ondersteuning ter hoogte van het tussensteunpunt wordt vervangen door een kracht $R_3$, een kracht die afhankelijk is van de vervorming ter hoogte van het steunpunt $v_{xsteun}$. Mits het opleggen van een bijkomende kinematische randvoorwaarde, dat de vervorming er ter hoogte van dit punt gelijk moet zijn aan de verhouding tussen de te berekenen kracht $R_3$ en de axiale stijfheid, kan een oplossing bekomen worden voor het belastingsschema.
+
+$R_3 = \dfrac{\text{EA}}{L}\ v(x_{steun}) \longrightarrow v(x_{steun}) = \dfrac{L}{\text{EA}}\ R_3$
+"""
+
+# ╔═╡ ddeaf6b6-5e91-46fa-adf8-026bf6933dee
+@drawsvg begin
+	sethue("black")
+	endpnts = (-225, 0), (225, 0)
+	pnt_a = Point(-45, 0)
+	pnt_x = Point(0, 0)
+	pnts = Point.(endpnts)
+	@layer (
+		fontsize(20);
+		poly(pnts, :stroke);
+		circle.(pnts, 4, :fill);
+		Luxor.label.(["1", "2"], [:NW, :NE], pnts, offset=15)
+	)
+	@layer (
+		# Verdeelde last 1
+		fontsize(16);
+		Luxor.translate(0, -50);
+		len_1 = distance(pnts[1], pnt_a);
+		for i = 0:fld(len_1, 15)
+			Luxor.arrow(pnts[1] + (15 * i, 0), pnts[1] + (15 * i, 45));
+		end;
+		poly((pnts[1], pnt_a), :stroke);
+		Luxor.label("p₁", :N, midpoint(pnts[1], pnt_a), offset=15);
+	)
+	@layer (
+		# Verdeelde last 2
+		fontsize(16);
+		Luxor.translate(0, -30);
+		len_2 = distance(pnt_a, pnts[2]);
+		for i = 0:fld(len_2, 15)
+			Luxor.arrow(pnt_a + (15 * i, 0), pnt_a + (15 * i, 25));
+		end;
+		poly((pnt_a, pnts[2]), :stroke);
+		Luxor.label("p₂", :N, midpoint(pnt_a, pnts[2]), offset=15);
+	)
+	@layer (
+		# Tussensteunpunt
+		fontsize(16);
+		Luxor.translate(0, 10);
+		poly((pnt_x , pnt_x - (0, 10)), :stroke);
+		poly((pnt_x , Point(5, 2.5)), :stroke);
+		for i in 1:6
+			sign = i |> isodd ? -1 : 1;
+			poly((Point(-sign * 5, i * 5 - 2.5) , Point(sign * 5, (i + 1) * 5 - 2.5)), :stroke);
+		end;
+		poly((Point(5, 32.5) , Point(0, 35)), :stroke);
+		poly((Point(0, 35) , Point(0, 45)), :stroke);
+		Luxor.label("R₃", :W, Point(0, 45), offset=5);
+	)
+	@layer (
+		fontsize(16);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts...);
+		Luxor.label("L", :SW, pnts[2], offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts[1], pnt_x);
+		Luxor.label("x_steun", :SE, pnt_x, offset=15);
+		Luxor.translate(0, 10);
+		Luxor.arrow(pnts[1], pnt_a);
+		Luxor.label("a", :SW, pnt_a, offset=15);
+	)
+end (800) (170)
 
 # ╔═╡ 3bb458cb-1a11-4102-b588-ab67cbcb28da
 md"""
@@ -67,6 +146,8 @@ combinaties = DataFrame([
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
+	(check=:GGT, naam="F", formule="G + 0.5 * Q_vloer"),
+	(check=:UGT, naam="F", formule="1.35 * G + 1.5 * (Q_vloer + 0.5 * Q_sneeuw)"),
 ])
 
 # ╔═╡ 8d2a4c22-579c-4e92-a36d-4f5a763a9395
@@ -78,14 +159,43 @@ md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worde
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
 
+# ╔═╡ 8eea80b3-9824-4c5a-b1e7-76244ecadeb6
+md"""
+#### Keuze steun
+De stijfheid is bepaald uit de materiaal karakteristieken van de de steun.
+
+Keuze = *SHS 140/5*
+"""
+
+# ╔═╡ 2eb8de93-f0a2-402e-98a6-474a483acb06
+A = 2673 # mm²
+
+# ╔═╡ 1cebf7c3-566f-43ac-ae1c-4ade8d6b3dfe
+E = 210_000 # N/mm² of 10⁶ N/m²
+
+# ╔═╡ 18874aab-46ce-41ab-a275-6fd13ed088b4
+L_kolom = 2.8 # m
+
+# ╔═╡ f6d87218-d41c-4f03-8d57-c03f33910c86
+k = E * A / L_kolom / 1000 # kN/m
+
 # ╔═╡ b66c98c7-fcbc-4d04-a1dc-9452cae611a9
 md"""
 ### Oplossing belastingsschema
 Met behulp van het **superpositiebeginsel** generaliseren we het probleem door een samenstel van de effecten, $V$, $M$, $\alpha$ en $v$, door de afzonderlijke aangrijpende belastingen te nemen.
 """
 
+# ╔═╡ 0bcb8652-280f-41ca-83b8-df2b07113576
+md"""
+!!! danger "Opgepast!"
+	Bij het gebruiken van de syntax `R11(deel...)` moet je opletten hoe `deel` is opgebouwd, immers worden de substituties niet gelijktijdig uitgevoerd, maar één voor één, en telkens wordt de formule geëvalueerd en vereenvoudigd. Dus pas je `a => b` (`a` naar `b`) aan en dan `b => L` (`b` naar `L`), dan wordt de eerder omzetting dus ook verder doorgevoerd.
+"""
+
 # ╔═╡ 7badb26d-2b53-422e-889a-1c17e009a933
-p1, p2 = symbols("p_1 p_2", real=true)
+p1, p2, R3, x_steun = symbols("p_1 p_2 R_3 x_{steun}", real=true)
+
+# ╔═╡ c63034f7-fee5-4b29-af59-dc64679a3733
+md"Omdat de ligger **hyperstatisch** is, wordt er *gesneden* naar het steunpunt en wordt een fictieve kracht $R_3$ in rekening gebracht, deze kracht wordt als een externe belasting ingerekend"
 
 # ╔═╡ b70d1695-7e91-4903-a239-2a3adb4c3bd8
 md"#### Reactiekrachten"
@@ -112,6 +222,11 @@ Maximale interne krachten en hun voorkomen ($x$ abscis)"
 md"""
 !!! tip "lambdify"
 	`lambdify` wordt gebruikt om de formules om te zetten van hun `SymPy` vorm naar een pure `Julia` vorm
+"""
+
+# ╔═╡ 348b1476-41e2-4312-8eff-4b8200218659
+md"""
+Substitueer alle parameters en los op naar $R_3$
 """
 
 # ╔═╡ 45618fab-0dc4-43c3-ab0f-d24490e88695
@@ -183,18 +298,23 @@ profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$profiel
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
 # Berekening $naam - $(profiel[1, "name"])
-Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
+Bereking van **$naam**, een **hyperstatische** ligger **onder muur 13 en 15**. Het profiel hoort in theorie de vloer van de badkamer en kamer 3 niet te ondersteunen, gezien deze afdraagt van respectievelijk muur 1 naar muur 4 en 5, van muur 4 en 6 naar muur 9. Veiligheidshalve rekenen we 20% mee van de last t.g.v. de vloer van de badkamer en kamer 3.
+
+Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekend met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**), tenzij hier uitdrukkelijk van afgeweken wordt.
 """
 
 # ╔═╡ 7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 belastingsgevallen = DataFrame([
-	(naam="g1", waarde=32.09, beschrijving="Perm. last - lastendaling"),
-	(naam="g2", waarde=19.39, beschrijving="Perm. last - lastendaling"),
+	(naam="g1", waarde=20, beschrijving="Perm. last - lastendaling"),
+	(naam="g2", waarde=30, beschrijving="Perm. last - lastendaling"),
+	(naam="G", waarde=10, beschrijving="Perm. last - lastendaling"),	
 	(naam="gp", waarde=profiel[1, "G"] * 0.01, beschrijving="Perm. last - profiel"),
-	(naam="q1_vloer", waarde=13.30, beschrijving="Var. last - nuttige overlast"),
-	(naam="q2_vloer", waarde=7.96, beschrijving="Var. last - nuttige overlast"),
-	(naam="q1_sneeuw", waarde=3.86, beschrijving="Var. last - sneeuwlast"),
-	(naam="q2_sneeuw", waarde=2.03, beschrijving="Var. last - sneeuwlast")
+	(naam="q1_vloer", waarde=10, beschrijving="Var. last - nuttige overlast"),
+	(naam="q2_vloer", waarde=15, beschrijving="Var. last - nuttige overlast"),
+	(naam="Q_vloer", waarde=5, beschrijving="Var. last - nuttige overlast"),
+	(naam="q1_sneeuw", waarde=2, beschrijving="Var. last - sneeuwlast"),
+	(naam="q2_sneeuw", waarde=3, beschrijving="Var. last - sneeuwlast"),
+	(naam="Q_sneeuw", waarde=1, beschrijving="Var. last - sneeuwlast")
 ])
 
 # ╔═╡ 8c7359a5-4daf-4c6e-b92a-75b96636b26c
@@ -211,8 +331,9 @@ maatgevend = unstack(combine(groupby(resultaatklasse, [:naam, :check]), :uitkoms
 
 # ╔═╡ 4b9528fc-554f-49df-8fb8-49613f892e36
 rvw = begin
-	maatgevend[!, "a"] .= 2.473
-	maatgevend[!, "L"] .= 3.995
+	maatgevend[!, "a"] .= 5.40 - 1.94
+	maatgevend[!, "x_steun"] .= 5.40 - 2.04
+	maatgevend[!, "L"] .= 5.40
 	maatgevend
 end
 
@@ -337,6 +458,21 @@ end
 
 # ╔═╡ 2b3b4a17-3fdd-442d-872c-e5c77c9fd00a
 md"Definieer een nieuwe *type* getiteld *Unity Check* of `UC`" 
+
+# ╔═╡ d4ccd49b-d34f-4ac5-a463-c3ecb306c285
+struct TwoColumn{L, R}
+    left::L
+    right::R
+end
+
+# ╔═╡ 37fd4df6-63c9-44eb-9e92-1635f428a341
+function Base.show(io, mime::MIME"text/html", tc::TwoColumn)
+    write(io, """<div style="display: flex; align-items: center; justify-content: center;"><div>""")
+    show(io, mime, tc.left)
+    write(io, """</div><div style="flex: 1; padding-left: 2px;">""")
+    show(io, mime, tc.right)
+    write(io, """</div></div>""")
+end
 
 # ╔═╡ 46776f90-5dc9-422b-bfc2-9b9a94d97243
 mutable struct UC
@@ -470,14 +606,30 @@ deel1 = (
 # ╔═╡ a34c804b-399a-4e40-a556-1e590757d048
 deel2 = (
 	b => L,
-	p => p2
+	p => p2,
 )
 
-# ╔═╡ 109ed6b8-9220-40c4-8a40-f72a09e31228
- mapping = r -> (a=>r.a, L=>r.L, p1=>r.p1, p2=>r.p2, EI=>buigstijfheid)
+# ╔═╡ 6d812a7f-93e4-4d83-8c38-88d1c92f92cf
+deel3 = (
+	a => x_steun,
+	F => F
+)
+
+# ╔═╡ 7fa928b9-599d-43c3-b2d7-6890892e3771
+deel4 = (
+	a => x_steun,
+	F => R3
+)
 
 # ╔═╡ 84f36442-a43b-4488-b700-8cd399c20e4f
-fn = r -> (i -> lambdify(i(mapping(r)...)))
+#fn = r -> (i -> lambdify(i(mapping(r)...)))
+function fn(r)
+	sol = Dict(collect(keys(r)) .|> eval .=> collect(values(r)))
+	return i -> lambdify(i(
+			sol...,
+			EI => buigstijfheid
+	))
+end
 
 # ╔═╡ e7ba9264-9bff-45dc-89f8-44d09cf3898f
 md"""
@@ -532,49 +684,6 @@ BC31 = (
 		Luxor.translate(0, 10);
 		Luxor.arrow(pnts1[1], pnt_a1);
 		Luxor.label("a", :SW, pnt_a1, offset=15);
-	)
-end (800) (150)
-
-# ╔═╡ ddeaf6b6-5e91-46fa-adf8-026bf6933dee
-@drawsvg begin
-	sethue("black")
-	endpnts = (-200, 0), (190, 0)
-	pnt_a = Point(-50, 0)
-	pnts = Point.(endpnts)
-	@layer (
-		fontsize(20);
-		poly(pnts, :stroke);
-		circle.(pnts, 4, :fill);
-		Luxor.label.(["1", "2"], [:NW, :NE], pnts, offset=15)
-	)
-	@layer (
-		# Verdeelde last 1
-		fontsize(16);
-		Luxor.translate(0, -45);
-		for i = 0:10
-			Luxor.arrow(pnts[1] + (15 * i, 0), pnts[1] + (15 * i, 40));
-		end;
-		poly((pnts[1], pnt_a), :stroke);
-		Luxor.label("p₁", :N, midpoint(pnts[1], pnt_a), offset=15);
-	)
-	@layer (
-		# Verdeelde last 2
-		fontsize(16);
-		Luxor.translate(0, -30);
-		for i = 0:16
-			Luxor.arrow(pnt_a + (15 * i, 0), pnt_a + (15 * i, 25));
-		end;
-		poly((pnt_a, pnts[2]), :stroke);
-		Luxor.label("p₂", :N, midpoint(pnt_a1, pnts[2]), offset=15);
-	)
-	@layer (
-		fontsize(16);
-		Luxor.translate(0, 10);
-		Luxor.arrow(pnts...);
-		Luxor.label("L", :SW, pnts[2], offset=15);
-		Luxor.translate(0, 10);
-		Luxor.arrow(pnts[1], pnt_a);
-		Luxor.label("a", :SW, pnt_a, offset=15);
 	)
 end (800) (150)
 
@@ -775,7 +884,7 @@ R31 = ((p_a + p_b) / 2 * (b - a) * (p_a * (L - a) + p_b * (L - b)) / (p_a + p_b)
 R11 = SymPy.simplify(R31(BC31...))
 
 # ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
-R1 = R11(deel1...) + R11(deel2...)
+R1 = R11(deel1...) + R11(deel2...) + R21(deel3...) + R21(deel4...)
 
 # ╔═╡ 6472775b-5fc7-493c-a71c-7aed44657e4c
 R32 = ((p_a + p_b) / 2 * (b - a) * (p_a * a + p_b * b) / (p_a + p_b)) / L
@@ -784,7 +893,7 @@ R32 = ((p_a + p_b) / 2 * (b - a) * (p_a * a + p_b * b) / (p_a + p_b)) / L
 R12 = SymPy.simplify(R32(BC31...))
 
 # ╔═╡ dfd9aed7-9922-4a47-a0b9-20b0bae0ccbf
-R2 = R12(deel1...) + R12(deel2...)
+R2 = R12(deel1...) + R12(deel2...) + R22(deel3...) + R22(deel4...)
 
 # ╔═╡ d348331c-7418-4f8b-a749-64f7ee824cb6
 md"#### 3.1 Bepalen dwarskracht $V(t)$"
@@ -802,7 +911,7 @@ end
 V1 = SymPy.simplify(V3(BC31...))
 
 # ╔═╡ 842f1dbd-32b7-4adf-a0c8-6ca6a5fb323d
-V = V1(deel1...) + V1(deel2...)
+V = V1(deel1...) + V1(deel2...) + V2(deel3...) + V2(deel4...)
 
 # ╔═╡ b782e7c4-2c58-4a54-9f32-ed4ec4ac491c
 md"#### 3.2 Bepalen moment $M(t)$"
@@ -819,7 +928,7 @@ end
 M1 = SymPy.simplify(M3(BC31...))
 
 # ╔═╡ 5ac2cbd5-0117-404c-a9e7-301269c7e700
-M = M1(deel1...) + M1(deel2...)
+M = M1(deel1...) + M1(deel2...) + M2(deel3...) + M2(deel4...)
 
 # ╔═╡ 7fe06e69-573b-4bbf-9ccd-5ba3d508fab4
 md"#### 3.3 Bepalen hoekverdraaiing $\alpha(t)$"
@@ -878,7 +987,7 @@ EIα3 = α3_(opl3...)
 α1 = SymPy.simplify(α3(BC31...)) 
 
 # ╔═╡ 20d3d42b-cb8c-4263-956a-8211292b81ba
-α = α1(deel1...) + α1(deel2...)
+α = α1(deel1...) + α1(deel2...) + α2(deel3...) + α2(deel4...)
 
 # ╔═╡ 28c28e03-76a9-48fd-b68f-121be0d1b74f
 EIv3 = v3_(opl3...)
@@ -890,10 +999,34 @@ v3 = EIv3 / EI # volgens gekozen lengteenheid
 v1 = SymPy.simplify(v3(BC31...)) # volgens gekozen lengteenheid
 
 # ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
-v = v1(deel1...) + v1(deel2...)
+v = v1(deel1...) + v1(deel2...) + v2(deel3...) + v2(deel4...)
+
+# ╔═╡ b2a214ad-de66-4ceb-8827-f7229912529c
+R3_opl = solve(Eq(v(t=>x_steun),0), [R3]) |> first # Los op naar R3
+
+# ╔═╡ d0ac941f-aba4-4384-8fd8-c5c66ec2bb43
+vergelijking = rvw -> Eq.(
+	v(
+		t=>x_steun, # Evalueer de vervorming ter hoogte van x_steun
+		Dict(collect(keys(rvw)) .|> eval .=> collect(values(rvw)))...,
+		EI=>buigstijfheid # Substitueer de buigstijfheid van de balk
+	),
+	(R3 / k) .* [1/sqrt(2), 1, sqrt(2)] # De vervorming ter hoogte van de steun (t=x_steun) = R3 / k met k = EA/L
+)
+
+# ╔═╡ 463975d9-aae8-4f6d-ae34-2477acf6a9cc
+rvw_hulp = select(rvw, :, AsTable(DataFrames.Not(:check)) => 
+	ByRow(r -> solve.(vergelijking(r), [R3]) |> (N ∘ collect ∘ Iterators.flatten)) => [:R3_1, :R3_2, :R3_3], # Los op naar R3
+)
+
+# ╔═╡ 9cde34d3-79fb-44e7-aabd-bb3aac7ca209
+rvw_volledig = select(DataFrames.stack(rvw_hulp, [:R3_1, :R3_2, :R3_3], value_name=:R3), DataFrames.Not(:variable))
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
-opl = select(rvw, :, AsTable(:) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
+opl = select(rvw_volledig, :, AsTable(DataFrames.Not(:check)) => 
+	ByRow(r -> 
+		fn(r).([V,M,α,v])) => [:V, :M, :α, :v]
+)
 
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
 overzicht = select(opl, :check, :L,
@@ -1252,6 +1385,7 @@ Roots = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
 SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
 UUIDs = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
+Underscores = "d9a01c3f-67ce-4d8c-9b55-35f6e4050bb1"
 
 [compat]
 Conda = "~1.5.2"
@@ -1268,6 +1402,7 @@ PyCall = "~1.92.3"
 Roots = "~1.0.9"
 SQLite = "~1.1.4"
 SymPy = "~1.0.49"
+Underscores = "~2.0.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -2403,6 +2538,11 @@ git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
 uuid = "3a884ed6-31ef-47d7-9d2a-63182c4928ed"
 version = "1.0.2"
 
+[[Underscores]]
+git-tree-sha1 = "986a17a99a20d2c588f12585ff32458140eb9603"
+uuid = "d9a01c3f-67ce-4d8c-9b55-35f6e4050bb1"
+version = "2.0.0"
+
 [[Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
@@ -2690,10 +2830,12 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
+# ╟─d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
 # ╟─31851342-e653-45c2-8df6-223593a7f942
+# ╟─001ddb8b-3a71-48f8-adcc-a957741d57b1
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
@@ -2713,7 +2855,7 @@ version = "0.9.1+5"
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
 # ╟─8c7359a5-4daf-4c6e-b92a-75b96636b26c
-# ╠═1383f2c6-12fa-4a36-8462-391131d1aaee
+# ╟─1383f2c6-12fa-4a36-8462-391131d1aaee
 # ╠═4b9528fc-554f-49df-8fb8-49613f892e36
 # ╟─8d2a4c22-579c-4e92-a36d-4f5a763a9395
 # ╟─020b1acb-0966-4563-ab52-79a565ed2252
@@ -2727,10 +2869,19 @@ version = "0.9.1+5"
 # ╟─54a849f3-51ee-43e3-a90c-672046d3afa8
 # ╠═a1b7232f-4c34-4bd7-814a-2bacc4cb1fb4
 # ╠═5c4d049a-a2c4-48dc-a0dd-8199153c831a
+# ╟─8eea80b3-9824-4c5a-b1e7-76244ecadeb6
+# ╠═2eb8de93-f0a2-402e-98a6-474a483acb06
+# ╠═1cebf7c3-566f-43ac-ae1c-4ade8d6b3dfe
+# ╠═18874aab-46ce-41ab-a275-6fd13ed088b4
+# ╠═f6d87218-d41c-4f03-8d57-c03f33910c86
 # ╟─b66c98c7-fcbc-4d04-a1dc-9452cae611a9
-# ╟─7badb26d-2b53-422e-889a-1c17e009a933
+# ╟─0bcb8652-280f-41ca-83b8-df2b07113576
+# ╠═7badb26d-2b53-422e-889a-1c17e009a933
 # ╟─5d5aeb91-0507-4cab-8151-8b19389bb720
 # ╟─a34c804b-399a-4e40-a556-1e590757d048
+# ╟─6d812a7f-93e4-4d83-8c38-88d1c92f92cf
+# ╟─c63034f7-fee5-4b29-af59-dc64679a3733
+# ╟─7fa928b9-599d-43c3-b2d7-6890892e3771
 # ╟─b70d1695-7e91-4903-a239-2a3adb4c3bd8
 # ╟─bdaf28c5-98f5-478d-ab0f-c886d93fabf1
 # ╠═04dafcd3-8568-426b-9c5f-b21fc09d5e88
@@ -2743,11 +2894,15 @@ version = "0.9.1+5"
 # ╠═3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
 # ╟─72062ccd-540a-4bc4-9588-d5f6539a59ea
 # ╟─7ddacc3e-3877-4c7d-8127-b37a5e30b85a
-# ╠═109ed6b8-9220-40c4-8a40-f72a09e31228
+# ╟─348b1476-41e2-4312-8eff-4b8200218659
+# ╟─b2a214ad-de66-4ceb-8827-f7229912529c
+# ╠═d0ac941f-aba4-4384-8fd8-c5c66ec2bb43
+# ╠═463975d9-aae8-4f6d-ae34-2477acf6a9cc
+# ╟─9cde34d3-79fb-44e7-aabd-bb3aac7ca209
 # ╠═84f36442-a43b-4488-b700-8cd399c20e4f
 # ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
 # ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
-# ╟─b91ad51c-f9f7-4236-8040-1959533f1793
+# ╠═b91ad51c-f9f7-4236-8040-1959533f1793
 # ╟─0823262b-1e9d-4288-abd4-48c6f0894457
 # ╟─40fe2709-43b6-419c-9acb-2b2763345811
 # ╟─d99644ec-8b84-47a7-81a7-f87657cf3820
@@ -2778,6 +2933,8 @@ version = "0.9.1+5"
 # ╠═666bbf88-8d84-416f-a369-d2e20a7935f1
 # ╠═598e31e9-b7d1-40c7-82e4-743997cb4063
 # ╟─2b3b4a17-3fdd-442d-872c-e5c77c9fd00a
+# ╠═d4ccd49b-d34f-4ac5-a463-c3ecb306c285
+# ╠═37fd4df6-63c9-44eb-9e92-1635f428a341
 # ╠═6c9ec52c-fd12-4d28-ba4b-179c0093e6e8
 # ╠═46776f90-5dc9-422b-bfc2-9b9a94d97243
 # ╟─494217c7-510c-4993-b995-741d42f9d502

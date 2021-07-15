@@ -13,11 +13,8 @@ macro bind(def, element)
     end
 end
 
-# ╔═╡ 237b0975-9178-4176-89f5-fc177b80a403
-using Underscores
-
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
-using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs
+using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs, Underscores
 
 # ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
 load("./assets/img/profiel_3.jpg")
@@ -36,8 +33,8 @@ md"""
 load("./assets/img/indeling.jpg")
 
 # ╔═╡ 31851342-e653-45c2-8df6-223593a7f942
-md"## Probleemstelling: Eenvoudig opgelegde ligger met uitkraging
-Eenvoudig opgelegde ligger met een gedeeltelijke uitkraging en 3 verdeelde belastingen"
+md"## Probleemstelling: Hyperstatische ligger met 1 tussensteunpunt
+Hyperstatische ligger met 1 tussensteunpunt en 3 variabele belastingen"
 
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 md"Naam van het profiel; $\text{naam}$ = $(@bind naam TextField(default=\"Basis\"))"
@@ -53,7 +50,7 @@ md"### Beschrijving belastingsschema
 Definiëer de randvoorwaarden of *Boundary Conditions* $(\text{BC})$. Voor een **verdeelde belasting** geef je de parameters $a$, $b$, $L$ en $p$ in waarbij een *positieve* waarde van $p$ een neerwaartse belasting is. Voor een **puntbelasting** geef je de parameters $a$, $L$ en $p$ in. Ook de stijfheid $\text{EI}$."
 
 # ╔═╡ c4df4b92-a3c6-43bd-a594-9d1f8c76015f
-md"In het desbetreffende geval waarbij er **drie verdeelde belastingen** aangrijpen naast elkaar, herleidt het aantal paramaters zich tot $a$, $b$, $x_{steun}$, $L$, $p_1$, $p_2$ en $p_3$."
+md"In het desbetreffende geval waarbij er **drie verdeelde belastingen** aangrijpen naast elkaar, herleidt het aantal paramaters zich tot $a$, $b$, $x_{steun}$, $L$, $p_1$, $p_2$ en $p_3$. De ondersteuning ter hoogte van het tussensteunpunt wordt vervangen door een kracht $R_3$. Mits het opleggen van een bijkomende kinematische randvoorwaarde, dat de vervorming er ter hoogte van dit punt gelijk moet zijn aan $0\ mm$, kan een oplossing bekomen worden voor het belastingsschema."
 
 # ╔═╡ ddeaf6b6-5e91-46fa-adf8-026bf6933dee
 @drawsvg begin
@@ -163,7 +160,7 @@ Met behulp van het **superpositiebeginsel** generaliseren we het probleem door e
 # ╔═╡ 0bcb8652-280f-41ca-83b8-df2b07113576
 md"""
 !!! danger "Opgepast!"
-	Bij het gebruiken van de syntax `R11(deel...)` moet je opletten hoe `deel` is opgebouwd, immers worden de substituties niet gelijktijdig uitgevoerd, maar één voor één, en telkens wordt de formule geevalueerd en vereenvoudigd. Dus pas je `a => b` (`a` naar `b`) aan en dan `b => L` (`b` naar `L`), dan wordt de eerder omzetting dus ook verder doorgevoerd.
+	Bij het gebruiken van de syntax `R11(deel...)` moet je opletten hoe `deel` is opgebouwd, immers worden de substituties niet gelijktijdig uitgevoerd, maar één voor één, en telkens wordt de formule geëvalueerd en vereenvoudigd. Dus pas je `a => b` (`a` naar `b`) aan en dan `b => L` (`b` naar `L`), dan wordt de eerder omzetting dus ook verder doorgevoerd.
 """
 
 # ╔═╡ 7badb26d-2b53-422e-889a-1c17e009a933
@@ -199,21 +196,10 @@ md"""
 	`lambdify` wordt gebruikt om de formules om te zetten van hun `SymPy` vorm naar een pure `Julia` vorm
 """
 
-# ╔═╡ dc1b984f-76bb-44b2-9e12-ae33a30611d4
-test = (blabla = 5,)
-
-# ╔═╡ 3df7c910-1b54-48e2-a72d-13393f23a525
-collect(keys(test))
-
-# ╔═╡ 7d415fcb-b6b4-4e70-b9fe-2630726c1051
-collect(values(test))
-
-# ╔═╡ 84f36442-a43b-4488-b700-8cd399c20e4f
-#fn = r -> (i -> lambdify(i(mapping(r)...)))
-function fn(r)
-	sol = @_ r[DataFrames.Not(:check)] |> Dict(names(__) .|> (eval ∘ Meta.parse) .=> values(__))
-	return i -> lambdify(i(sol...))
-end
+# ╔═╡ 348b1476-41e2-4312-8eff-4b8200218659
+md"""
+Substitueer alle parameters en los op naar $R_3$
+"""
 
 # ╔═╡ 45618fab-0dc4-43c3-ab0f-d24490e88695
 rnd = (n -> round.(n, digits=3))
@@ -330,15 +316,6 @@ isGGT = rvw.check .== :GGT
 # ╔═╡ 8e5c04fd-d83c-49e8-b6b1-5a6a101c56c9
 isUGT = rvw.check .== :UGT
 
-# ╔═╡ 83b220de-14c2-4649-82ea-51a576755302
-test1234 = rvw[1,:]
-
-# ╔═╡ 3a772b83-e1e4-4a2f-bee0-f73ab36d7185
-rij1 = @_ rvw[1,DataFrames.Not(:check)] |> Dict(names(__) .|> (eval ∘ Meta.parse) .=> values(__))
-
-# ╔═╡ 129edfaa-052e-432b-a0a9-9915bf08f26b
-names(first(rvw))
-
 # ╔═╡ 03e08a96-29c2-4921-b107-ded3f7dce079
 buigstijfheid = 210000 * profiel[1, "Iy"] / 10^5 # kNm²
 
@@ -454,6 +431,21 @@ end
 
 # ╔═╡ 2b3b4a17-3fdd-442d-872c-e5c77c9fd00a
 md"Definieer een nieuwe *type* getiteld *Unity Check* of `UC`" 
+
+# ╔═╡ d4ccd49b-d34f-4ac5-a463-c3ecb306c285
+struct TwoColumn{L, R}
+    left::L
+    right::R
+end
+
+# ╔═╡ 37fd4df6-63c9-44eb-9e92-1635f428a341
+function Base.show(io, mime::MIME"text/html", tc::TwoColumn)
+    write(io, """<div style="display: flex; align-items: center; justify-content: center;"><div>""")
+    show(io, mime, tc.left)
+    write(io, """</div><div style="flex: 1; padding-left: 2px;">""")
+    show(io, mime, tc.right)
+    write(io, """</div></div>""")
+end
 
 # ╔═╡ 46776f90-5dc9-422b-bfc2-9b9a94d97243
 mutable struct UC
@@ -602,8 +594,15 @@ deel4 = (
 	F => R3
 )
 
-# ╔═╡ 109ed6b8-9220-40c4-8a40-f72a09e31228
- mapping = r -> (a=>r.a, L=>r.L, p1=>r.p1, p2=>r.p2, EI=>buigstijfheid)
+# ╔═╡ 84f36442-a43b-4488-b700-8cd399c20e4f
+#fn = r -> (i -> lambdify(i(mapping(r)...)))
+function fn(r)
+	sol = Dict(collect(keys(r)) .|> eval .=> collect(values(r)))
+	return i -> lambdify(i(
+			sol...,
+			EI => buigstijfheid
+	))
+end
 
 # ╔═╡ e7ba9264-9bff-45dc-89f8-44d09cf3898f
 md"""
@@ -975,19 +974,29 @@ v1 = SymPy.simplify(v3(BC31...)) # volgens gekozen lengteenheid
 # ╔═╡ 3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
 v = v1(deel1...) + v1(deel2...) + v1(deel3...) + v2(deel4...)
 
-# ╔═╡ 463975d9-aae8-4f6d-ae34-2477acf6a9cc
-test321 = select(rvw, AsTable(DataFrames.Not(:check)) => 
-	ByRow(r -> v(t=>x_steun, Dict(collect(keys(r)) .|> eval .=> collect(values(r)))..., EI=>buigstijfheid)) => :vgl, 
+# ╔═╡ b2a214ad-de66-4ceb-8827-f7229912529c
+R3_opl = solve(Eq(v(t=>x_steun),0), [R3]) |> first # Los op naar R3
+
+# ╔═╡ d0ac941f-aba4-4384-8fd8-c5c66ec2bb43
+vergelijking = rvw -> Eq(
+	v(
+		t=>x_steun, # Evalueer de vervorming ter hoogte van x_steun
+		Dict(collect(keys(rvw)) .|> eval .=> collect(values(rvw)))...,
+		EI=>buigstijfheid # Substitueer de buigstijfheid van de balk
+	),
+	0 # De vervorming ter hoogte van de steun (t=x_steun) = 0
 )
 
-# ╔═╡ 9e6efa0a-cb38-48ba-a79e-2d8cf446b427
-select(test321, :vgl => ByRow(r -> first(solve(r))) => :R3)
-
-# ╔═╡ b6658be4-d5a0-49fe-a90c-633e9ca49b79
-solve(v(t=>x_steun, rij1..., EI=>buigstijfheid), [R3])
+# ╔═╡ 463975d9-aae8-4f6d-ae34-2477acf6a9cc
+rvw_volledig = select(rvw, :, AsTable(DataFrames.Not(:check)) => 
+	ByRow(r -> solve(vergelijking(r), [R3]) |> (N ∘ first)) => :R3, # Los op naar R3
+)
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
-opl = select(rvw, :, AsTable(:) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
+opl = select(rvw_volledig, :, AsTable(DataFrames.Not(:check)) => 
+	ByRow(r -> 
+		fn(r).([V,M,α,v])) => [:V, :M, :α, :v]
+)
 
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
 overzicht = select(opl, :check, :L,
@@ -2849,17 +2858,10 @@ version = "0.9.1+5"
 # ╠═3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
 # ╟─72062ccd-540a-4bc4-9588-d5f6539a59ea
 # ╟─7ddacc3e-3877-4c7d-8127-b37a5e30b85a
-# ╠═237b0975-9178-4176-89f5-fc177b80a403
-# ╠═83b220de-14c2-4649-82ea-51a576755302
-# ╠═dc1b984f-76bb-44b2-9e12-ae33a30611d4
-# ╠═3df7c910-1b54-48e2-a72d-13393f23a525
-# ╠═7d415fcb-b6b4-4e70-b9fe-2630726c1051
-# ╠═3a772b83-e1e4-4a2f-bee0-f73ab36d7185
+# ╟─348b1476-41e2-4312-8eff-4b8200218659
+# ╟─b2a214ad-de66-4ceb-8827-f7229912529c
+# ╠═d0ac941f-aba4-4384-8fd8-c5c66ec2bb43
 # ╠═463975d9-aae8-4f6d-ae34-2477acf6a9cc
-# ╠═9e6efa0a-cb38-48ba-a79e-2d8cf446b427
-# ╠═129edfaa-052e-432b-a0a9-9915bf08f26b
-# ╠═b6658be4-d5a0-49fe-a90c-633e9ca49b79
-# ╠═109ed6b8-9220-40c4-8a40-f72a09e31228
 # ╠═84f36442-a43b-4488-b700-8cd399c20e4f
 # ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
 # ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
@@ -2894,6 +2896,8 @@ version = "0.9.1+5"
 # ╠═666bbf88-8d84-416f-a369-d2e20a7935f1
 # ╠═598e31e9-b7d1-40c7-82e4-743997cb4063
 # ╟─2b3b4a17-3fdd-442d-872c-e5c77c9fd00a
+# ╠═d4ccd49b-d34f-4ac5-a463-c3ecb306c285
+# ╠═37fd4df6-63c9-44eb-9e92-1635f428a341
 # ╠═6c9ec52c-fd12-4d28-ba4b-179c0093e6e8
 # ╠═46776f90-5dc9-422b-bfc2-9b9a94d97243
 # ╟─494217c7-510c-4993-b995-741d42f9d502
