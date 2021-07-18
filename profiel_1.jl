@@ -33,8 +33,19 @@ load("./assets/img/indeling.jpg")
 md"## Probleemstelling: Eenvoudig opgelegde ligger met uitkraging
 Eenvoudig opgelegde ligger met een gedeeltelijke uitkraging en 3 verdeelde belastingen"
 
+# ╔═╡ 56f65932-b5b1-44c1-bfc3-957b8a4b7f26
+naam = "Profiel 1"
+
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
-md"Naam van het profiel; $\text{naam}$ = $(@bind naam TextField(default=\"Basis\"))"
+md"""
+Naam van het profiel; $\text{naam}$ = $naam
+"""
+
+# ╔═╡ 6a9c1261-36f0-4e25-b6a5-e48428994568
+ligger = (
+	naam = "HE 220 B",
+	kwaliteit = "S235"
+)
 
 # ╔═╡ 542f69ac-77c5-47d7-be6c-94ba82a50ef7
 md"""
@@ -75,8 +86,21 @@ md"Twee hulpvariabelen voor later..."
 # ╔═╡ 78a060bd-f930-4205-a956-abbb72797c1c
 md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worden"
 
+# ╔═╡ f8f0fd29-3268-4d4a-bba6-316eb0b3e964
+md"""
+#### Eigenschappen van het profiel
+Eigenschappen van het gekozen profiel - type $(ligger[:naam])
+"""
+
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
+
+# ╔═╡ 7828d5a1-0a0a-45e5-acf1-a287638eb582
+f_yd = begin 
+	f_yk = parse(Int64, ligger[:kwaliteit][2:end]) # MPa = N/mm² - Representatieve waarde
+	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
+	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
+end
 
 # ╔═╡ b66c98c7-fcbc-4d04-a1dc-9452cae611a9
 md"""
@@ -161,24 +185,20 @@ db = SQLite.DB("assets/db/db.sqlite")
 # ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
 begin
 	sections = DBInterface.execute(db, "SELECT name FROM sections") |> DataFrame
-	select_profiel = @bind profiel_naam Select(sections[!, "name"], default="HE 200 B")
-	select_staalkwaliteit = @bind staalkwaliteit Select(["S235", "S355"])
+	select_profiel = @bind __profiel Select(sections[!, "name"], default=ligger[:naam])
+	select_staalkwaliteit = @bind __staalkwaliteit Select(["S235", "S355"], default=ligger[:kwaliteit])
 	md"""
-	Keuze profiel: $select_profiel
+	Lijst met beschikbare profielen: $select_profiel
 	
-	Keuze staalkwaliteit: $select_staalkwaliteit
+	Lijst met staalkwaliteiten: $select_staalkwaliteit
 	"""
 end
 
-# ╔═╡ 7828d5a1-0a0a-45e5-acf1-a287638eb582
-f_yd = begin 
-	f_yk = parse(Int64, staalkwaliteit[2:end]) # MPa = N/mm² - Representatieve waarde
-	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
-	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
-end
+# ╔═╡ 8259693e-9b40-4579-81f4-b1a137dfccb2
+DBInterface.execute(db, "SELECT * FROM sections WHERE name IN ('HE 220 A', 'HE 200 A', 'HE 220 B', 'HE 200 B') ORDER BY Iz ASC;") |> DataFrame |> t -> t[:, [:name, :b, :h, :Iz]]
 
 # ╔═╡ 43453fa0-512b-4960-a0bb-fb44e538b6a6
-profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$profiel_naam';") |> DataFrame
+profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$(ligger[:naam])';") |> DataFrame
 
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
@@ -473,11 +493,14 @@ deel2 = (
 	p => p2
 )
 
-# ╔═╡ 109ed6b8-9220-40c4-8a40-f72a09e31228
- mapping = r -> (a=>r.a, L=>r.L, p1=>r.p1, p2=>r.p2, EI=>buigstijfheid)
-
 # ╔═╡ 84f36442-a43b-4488-b700-8cd399c20e4f
-fn = r -> (i -> lambdify(i(mapping(r)...)))
+function fn(r)
+	rvw = Dict(collect(keys(r)) .|> eval .=> collect(values(r)))
+	return i -> lambdify(i(
+			rvw...,
+			EI => buigstijfheid
+	))
+end
 
 # ╔═╡ e7ba9264-9bff-45dc-89f8-44d09cf3898f
 md"""
@@ -893,7 +916,7 @@ v1 = SymPy.simplify(v3(BC31...)) # volgens gekozen lengteenheid
 v = v1(deel1...) + v1(deel2...)
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
-opl = select(rvw, :, AsTable(:) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
+opl = select(rvw, :, AsTable(DataFrames.Not(:check)) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
 
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
 overzicht = select(opl, :check, :L,
@@ -2694,7 +2717,11 @@ version = "0.9.1+5"
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
 # ╟─31851342-e653-45c2-8df6-223593a7f942
+# ╠═56f65932-b5b1-44c1-bfc3-957b8a4b7f26
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
+# ╟─3e479359-d1a8-4036-8e9c-04317efde55a
+# ╠═8259693e-9b40-4579-81f4-b1a137dfccb2
+# ╠═6a9c1261-36f0-4e25-b6a5-e48428994568
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
@@ -2713,15 +2740,15 @@ version = "0.9.1+5"
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
 # ╟─8c7359a5-4daf-4c6e-b92a-75b96636b26c
-# ╠═1383f2c6-12fa-4a36-8462-391131d1aaee
+# ╟─1383f2c6-12fa-4a36-8462-391131d1aaee
 # ╠═4b9528fc-554f-49df-8fb8-49613f892e36
 # ╟─8d2a4c22-579c-4e92-a36d-4f5a763a9395
 # ╟─020b1acb-0966-4563-ab52-79a565ed2252
 # ╟─8e5c04fd-d83c-49e8-b6b1-5a6a101c56c9
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
-# ╟─3e479359-d1a8-4036-8e9c-04317efde55a
+# ╟─f8f0fd29-3268-4d4a-bba6-316eb0b3e964
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
-# ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
+# ╠═43453fa0-512b-4960-a0bb-fb44e538b6a6
 # ╠═03e08a96-29c2-4921-b107-ded3f7dce079
 # ╟─7828d5a1-0a0a-45e5-acf1-a287638eb582
 # ╟─54a849f3-51ee-43e3-a90c-672046d3afa8
@@ -2743,11 +2770,10 @@ version = "0.9.1+5"
 # ╠═3bbe41e1-b5ca-4b4b-a6e5-1f5449ab2178
 # ╟─72062ccd-540a-4bc4-9588-d5f6539a59ea
 # ╟─7ddacc3e-3877-4c7d-8127-b37a5e30b85a
-# ╠═109ed6b8-9220-40c4-8a40-f72a09e31228
 # ╠═84f36442-a43b-4488-b700-8cd399c20e4f
 # ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
 # ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
-# ╟─b91ad51c-f9f7-4236-8040-1959533f1793
+# ╠═b91ad51c-f9f7-4236-8040-1959533f1793
 # ╟─0823262b-1e9d-4288-abd4-48c6f0894457
 # ╟─40fe2709-43b6-419c-9acb-2b2763345811
 # ╟─d99644ec-8b84-47a7-81a7-f87657cf3820

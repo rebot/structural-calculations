@@ -42,11 +42,23 @@ md"""
 	Om enige veiligheid in de berekening mee te nemen, wordt het tussensteunpunt als een veer gemodelleerd, hierbij is de volgende wet van kracht: $F = k\cdot v$ waarbij $k$ voor de veerconstante staat, die op zich gelijk is aan $k = \text{EA}/L$, de axiale stijfheid van de ondersteunende kolom. Een vork van stijfheden wordt toegepast in de berekening, waarbij de axiale stijfheid wordt vermenigvuldigd met $\left[1/\sqrt{2}; 1; \sqrt{2}\right]$.
 """
 
+# ╔═╡ 4ce3251e-f45c-4546-81b8-2e08d4ec9964
+naam = "Profiel 5"
+
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
-begin 
-	naam = "Profiel 5"
-	md"Naam van het profiel; $\text{naam}$ = $naam"
-end
+md"Naam van het profiel; $\text{naam}$ = $naam"
+
+# ╔═╡ ab13bfac-70c7-4b36-ba3f-988a96555af5
+ligger = (
+	naam = "HE 220 B",
+	kwaliteit = "S235"
+)
+
+# ╔═╡ ba610d7b-89bf-4ed7-b4b5-4753e9ebc28d
+kolom = (
+	naam = "SHS 120/6.3",
+	kwaliteit = "S235"
+)
 
 # ╔═╡ 542f69ac-77c5-47d7-be6c-94ba82a50ef7
 md"""
@@ -137,6 +149,13 @@ md"""
 # ╔═╡ 99a918eb-1cf3-48fe-807b-3807c3189faa
 md"Definieer in onderstaande tabel de verschillende belastingsgevallen"
 
+# ╔═╡ 28e28737-8800-4d9f-a758-5640d14519b9
+geom = (
+	a = 5.40 - 1.94,
+	x_steun = 5.40 - 2.04,
+	L = 5.40
+)
+
 # ╔═╡ 901d9ca8-d25d-4e61-92e4-782db7fd1701
 md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wordt gerekend met het $\psi_1$ gelijk aan $0.5$ voor de **nuttige overlast** in de *frequente* combinatie, dit volgens Categorie A volgens NBN EN 1990."
 
@@ -156,28 +175,35 @@ md"Twee hulpvariabelen voor later..."
 # ╔═╡ 78a060bd-f930-4205-a956-abbb72797c1c
 md"Voor de vervorming en hoekverdraaiing moet de stijfheid in acht genomen worden"
 
+# ╔═╡ ede7539a-c98b-4521-bff7-969e6652e20c
+md"""
+#### Eigenschappen van het profiel
+Eigenschappen van het gekozen profiel - type $(ligger[:naam])
+"""
+
 # ╔═╡ 5bacbd35-70eb-401d-bb62-23f6c17410b0
 md"Haal informatie van het profiel op en bewaar het in `info`"
+
+# ╔═╡ 7828d5a1-0a0a-45e5-acf1-a287638eb582
+f_yd = begin 
+	f_yk = parse(Int64, ligger[:kwaliteit][2:end]) # MPa = N/mm² - Representatieve waarde
+	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
+	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
+end
 
 # ╔═╡ 8eea80b3-9824-4c5a-b1e7-76244ecadeb6
 md"""
 #### Keuze steun
 De stijfheid is bepaald uit de materiaal karakteristieken van de de steun.
 
-Keuze = *SHS 140/5*
+Keuze = *$(kolom[:naam])*
 """
-
-# ╔═╡ 2eb8de93-f0a2-402e-98a6-474a483acb06
-A = 2673 # mm²
 
 # ╔═╡ 1cebf7c3-566f-43ac-ae1c-4ade8d6b3dfe
 E = 210_000 # N/mm² of 10⁶ N/m²
 
 # ╔═╡ 18874aab-46ce-41ab-a275-6fd13ed088b4
 L_kolom = 2.8 # m
-
-# ╔═╡ f6d87218-d41c-4f03-8d57-c03f33910c86
-k = E * A / L_kolom / 1000 # kN/m
 
 # ╔═╡ b66c98c7-fcbc-4d04-a1dc-9452cae611a9
 md"""
@@ -239,9 +265,42 @@ md"Onderstaande tabel bevat de **gesubstitueerde** generieke oplossingen"
 md"Hieronder wordt een **overzicht tabel** weergegeven, waarbij de minimum en maximum waardes van de verschillende effecten, zijnde $V$, $M$, $\alpha$ en $v$ worden weergegeven"
 
 # ╔═╡ d99644ec-8b84-47a7-81a7-f87657cf3820
-md"Maak grafieken aan"
+md"""
+#### Maak grafieken aan
+"""
 
-# ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
+# ╔═╡ b290bdba-193a-404f-befd-814fad9b4878
+function minmax(pair)
+	name, v = pair
+	# v: vector van functies
+	plot_size = (200, 160)
+	# Definieer de plot stijlen
+	if name == :V
+		c = "lightsalmon"
+		ylabel = "kN"
+	elseif name == :M
+		c = "dodgerblue"
+		ylabel = "kNm"
+	elseif name == :α
+		c = "grey"
+		ylabel = "rad"
+	elseif name == :v
+		c = "purple"
+		ylabel = "m"
+	else
+		c = "black"
+		ylabel = "-"
+	end
+	# Geef de resultaten weer
+	results = Array{Union{Nothing, Array{Float64}}}(nothing, length(v))
+	for (i, fn) in enumerate(v)
+		results[i] = fn.(0:0.1:geom[:L])
+	end
+	y1, y2 = collect.(zip((zip(results...) .|> extrema)...))
+	return plot(0:0.1:geom[:L], y1, fillrange=y2, size=plot_size, legend=false, fillalpha = 0.35, c=c, ylabel=ylabel)
+end
+
+# ╔═╡ 1339c53c-fa89-4078-bd69-54cb6888a12f
  function grafiek(r) 
 	rng = 0:0.05:r.L
 	plot_size = (200, 160)
@@ -276,24 +335,19 @@ db = SQLite.DB("assets/db/db.sqlite")
 # ╔═╡ 3e479359-d1a8-4036-8e9c-04317efde55a
 begin
 	sections = DBInterface.execute(db, "SELECT name FROM sections") |> DataFrame
-	select_profiel = @bind profiel_naam Select(sections[!, "name"], default="HE 200 B")
-	select_staalkwaliteit = @bind staalkwaliteit Select(["S235", "S355"])
+	columns = DBInterface.execute(db, "SELECT name FROM tubes") |> DataFrame
+	select_profiel = @bind __profiel Select(sections[!, "name"], default=ligger[:naam])
+	select_kolom = @bind __kolom Select(columns[!, "name"], default=kolom[:naam])
+	select_staalkwaliteit = @bind __staalkwaliteit Select(["S235", "S355"], default=ligger[:kwaliteit])
 	md"""
-	Keuze profiel: $select_profiel
+	Lijst met beschikbare profielen: $select_profiel in kwaliteiten $select_staalkwaliteit
 	
-	Keuze staalkwaliteit: $select_staalkwaliteit
+	Lijst met beschikbare kolommen: $select_kolom in kwaliteiten $select_staalkwaliteit
 	"""
 end
 
-# ╔═╡ 7828d5a1-0a0a-45e5-acf1-a287638eb582
-f_yd = begin 
-	f_yk = parse(Int64, staalkwaliteit[2:end]) # MPa = N/mm² - Representatieve waarde
-	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
-	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
-end
-
 # ╔═╡ 43453fa0-512b-4960-a0bb-fb44e538b6a6
-profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$profiel_naam';") |> DataFrame
+profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$(ligger[:naam])';") |> DataFrame
 
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
@@ -331,9 +385,9 @@ maatgevend = unstack(combine(groupby(resultaatklasse, [:naam, :check]), :uitkoms
 
 # ╔═╡ 4b9528fc-554f-49df-8fb8-49613f892e36
 rvw = begin
-	maatgevend[!, "a"] .= 5.40 - 1.94
-	maatgevend[!, "x_steun"] .= 5.40 - 2.04
-	maatgevend[!, "L"] .= 5.40
+	maatgevend[!, "a"] .= geom[:a]
+	maatgevend[!, "x_steun"] .= geom[:x_steun]
+	maatgevend[!, "L"] .= geom[:L]
 	maatgevend
 end
 
@@ -344,7 +398,7 @@ isGGT = rvw.check .== :GGT
 isUGT = rvw.check .== :UGT
 
 # ╔═╡ 03e08a96-29c2-4921-b107-ded3f7dce079
-buigstijfheid = 210000 * profiel[1, "Iy"] / 10^5 # kNm²
+buigstijfheid = 210000 * (profiel[!, "Iy"] |> first) / 10^5 # kNm²
 
 # ╔═╡ 54a849f3-51ee-43e3-a90c-672046d3afa8
 W_el = profiel[1, "Wel.y"] # cm3
@@ -353,7 +407,16 @@ W_el = profiel[1, "Wel.y"] # cm3
 M_Rd = W_el * f_yd / 1000 # kNm
 
 # ╔═╡ 5c4d049a-a2c4-48dc-a0dd-8199153c831a
-V_Rd = profiel[1, "Avz"] * f_yd / 10 # kN
+V_Rd = (profiel[!, "Avz"] |> first) * f_yd / 10 # kN
+
+# ╔═╡ 88658420-969a-4786-87ad-bc56455503f8
+steun = DBInterface.execute(db, "SELECT * FROM tubes WHERE name = '$(kolom[:naam])';") |> DataFrame
+
+# ╔═╡ 2eb8de93-f0a2-402e-98a6-474a483acb06
+A = steun[!, :A] |> first # mm²
+
+# ╔═╡ f6d87218-d41c-4f03-8d57-c03f33910c86
+k = E * A / L_kolom / 1000 # kN/m
 
 # ╔═╡ 91f347d9-e9b6-4e53-9093-20d1987f8ca8
 md"Start de `plotly` backend"
@@ -1011,16 +1074,18 @@ vergelijking = rvw -> Eq.(
 		Dict(collect(keys(rvw)) .|> eval .=> collect(values(rvw)))...,
 		EI=>buigstijfheid # Substitueer de buigstijfheid van de balk
 	),
-	(R3 / k) .* [1/sqrt(2), 1, sqrt(2)] # De vervorming ter hoogte van de steun (t=x_steun) = R3 / k met k = EA/L
+	R3 ./ (k * [1/sqrt(2), 1, oo]) # De vervorming ter hoogte van de steun (t=x_steun) = R3 / k met k = EA/L
 )
 
 # ╔═╡ 463975d9-aae8-4f6d-ae34-2477acf6a9cc
-rvw_hulp = select(rvw, :, AsTable(DataFrames.Not(:check)) => 
-	ByRow(r -> solve.(vergelijking(r), [R3]) |> (N ∘ collect ∘ Iterators.flatten)) => [:R3_1, :R3_2, :R3_3], # Los op naar R3
+rvw_volledig = DataFrames.flatten(
+	select(rvw, : , AsTable(DataFrames.Not(:check)) => 
+		ByRow(
+			r -> solve.(vergelijking(r), [R3]) .|> (N ∘ first)
+		) => :R3
+	),
+	:R3
 )
-
-# ╔═╡ 9cde34d3-79fb-44e7-aabd-bb3aac7ca209
-rvw_volledig = select(DataFrames.stack(rvw_hulp, [:R3_1, :R3_2, :R3_3], value_name=:R3), DataFrames.Not(:variable))
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
 opl = select(rvw_volledig, :, AsTable(DataFrames.Not(:check)) => 
@@ -1029,13 +1094,25 @@ opl = select(rvw_volledig, :, AsTable(DataFrames.Not(:check)) =>
 )
 
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
-overzicht = select(opl, :check, :L,
-	AsTable(:) => ByRow(r -> [
-			r.V.(0:0.1:5),
-			r.M.(0:0.1:5),
-			r.α.(0:0.1:5),
-			r.v.(0:0.1:5)
-	] .|> (rnd ∘ extrema)) => [:V, :M, :α, :v]
+overzicht = combine(
+	groupby(
+		select(opl, :check, :L,
+			AsTable(:) => ByRow(r -> [
+					r.V.(0:0.1:geom[:L]),
+					r.M.(0:0.1:geom[:L]),
+					r.α.(0:0.1:geom[:L]),
+					r.v.(0:0.1:geom[:L])
+			] .|> (rnd ∘ extrema)) => [:V, :M, :α, :v]
+		),
+		[:check, :L]
+	),
+	AsTable([:V, :M, :α, :v]) => (
+		r -> NamedTuple{keys(r)}(
+			extrema.(
+				Iterators.flatten.(values(r))
+			)
+		)
+	) => [:V, :M, :α, :v]
 )
 
 # ╔═╡ 882a3f47-b9f0-4a92-98b2-881f8ce84f6d
@@ -1068,16 +1145,27 @@ begin
 end
 
 # ╔═╡ e4e895b7-19f4-4eb5-9536-c1a729fd8fcf
-controles = DataFrames.stack(select(overzicht, :check, 
-	AsTable(:) => ByRow(controle) => ["Check $i" for i in 1:4]
-), DataFrames.Not(:check), :check, variable_name="nummer", value_name="unity check") |> dropmissing
+controles = DataFrames.stack(
+	select(overzicht, 
+		:check, 
+		AsTable(:) => 
+			ByRow(controle) => ["Check $i" for i in 1:4]
+	), 
+	DataFrames.Not(:check), 
+	:check, 
+	variable_name="nummer", 
+	value_name="unity check"
+) |> dropmissing
 
 # ╔═╡ 8703a7d1-2838-4c98-8b93-1d4af8cf2b21
 controles
 
-# ╔═╡ 893f1b7d-2ec4-40d4-b905-3021c943d73a
-grafieken = select(opl,
-	AsTable(:) => ByRow(r -> grafiek(r)) => [:V, :M, :α, :v]
+# ╔═╡ 64063bd8-e592-425e-87c1-ed9e96db24a9
+grafieken = combine(
+	groupby(opl, :check), 
+	AsTable([:V, :M, :α, :v]) => (
+		r -> NamedTuple{(:V, :M, :α, :v)}(minmax.(collect(pairs(r))))
+	) => [:V, :M, :α, :v]
 )
 
 # ╔═╡ e5f707ce-54ad-466e-b6a6-29ad77168590
@@ -2836,7 +2924,11 @@ version = "0.9.1+5"
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
 # ╟─31851342-e653-45c2-8df6-223593a7f942
 # ╟─001ddb8b-3a71-48f8-adcc-a957741d57b1
+# ╠═4ce3251e-f45c-4546-81b8-2e08d4ec9964
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
+# ╟─3e479359-d1a8-4036-8e9c-04317efde55a
+# ╠═ab13bfac-70c7-4b36-ba3f-988a96555af5
+# ╠═ba610d7b-89bf-4ed7-b4b5-4753e9ebc28d
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
@@ -2851,17 +2943,18 @@ version = "0.9.1+5"
 # ╟─ddeaf6b6-5e91-46fa-adf8-026bf6933dee
 # ╟─3bb458cb-1a11-4102-b588-ab67cbcb28da
 # ╟─99a918eb-1cf3-48fe-807b-3807c3189faa
+# ╠═28e28737-8800-4d9f-a758-5640d14519b9
 # ╟─7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
 # ╟─8c7359a5-4daf-4c6e-b92a-75b96636b26c
 # ╟─1383f2c6-12fa-4a36-8462-391131d1aaee
-# ╠═4b9528fc-554f-49df-8fb8-49613f892e36
+# ╟─4b9528fc-554f-49df-8fb8-49613f892e36
 # ╟─8d2a4c22-579c-4e92-a36d-4f5a763a9395
 # ╟─020b1acb-0966-4563-ab52-79a565ed2252
 # ╟─8e5c04fd-d83c-49e8-b6b1-5a6a101c56c9
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
-# ╟─3e479359-d1a8-4036-8e9c-04317efde55a
+# ╟─ede7539a-c98b-4521-bff7-969e6652e20c
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
 # ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
 # ╠═03e08a96-29c2-4921-b107-ded3f7dce079
@@ -2870,6 +2963,7 @@ version = "0.9.1+5"
 # ╠═a1b7232f-4c34-4bd7-814a-2bacc4cb1fb4
 # ╠═5c4d049a-a2c4-48dc-a0dd-8199153c831a
 # ╟─8eea80b3-9824-4c5a-b1e7-76244ecadeb6
+# ╠═88658420-969a-4786-87ad-bc56455503f8
 # ╠═2eb8de93-f0a2-402e-98a6-474a483acb06
 # ╠═1cebf7c3-566f-43ac-ae1c-4ade8d6b3dfe
 # ╠═18874aab-46ce-41ab-a275-6fd13ed088b4
@@ -2897,20 +2991,20 @@ version = "0.9.1+5"
 # ╟─348b1476-41e2-4312-8eff-4b8200218659
 # ╟─b2a214ad-de66-4ceb-8827-f7229912529c
 # ╠═d0ac941f-aba4-4384-8fd8-c5c66ec2bb43
-# ╠═463975d9-aae8-4f6d-ae34-2477acf6a9cc
-# ╟─9cde34d3-79fb-44e7-aabd-bb3aac7ca209
+# ╟─463975d9-aae8-4f6d-ae34-2477acf6a9cc
 # ╠═84f36442-a43b-4488-b700-8cd399c20e4f
 # ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
 # ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
-# ╠═b91ad51c-f9f7-4236-8040-1959533f1793
+# ╟─b91ad51c-f9f7-4236-8040-1959533f1793
 # ╟─0823262b-1e9d-4288-abd4-48c6f0894457
 # ╟─40fe2709-43b6-419c-9acb-2b2763345811
 # ╟─d99644ec-8b84-47a7-81a7-f87657cf3820
-# ╠═893f1b7d-2ec4-40d4-b905-3021c943d73a
-# ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
+# ╟─b290bdba-193a-404f-befd-814fad9b4878
+# ╠═64063bd8-e592-425e-87c1-ed9e96db24a9
+# ╟─1339c53c-fa89-4078-bd69-54cb6888a12f
 # ╟─454abf3b-b2a0-4d58-acfc-d3ff4a9e0255
 # ╠═24bb7ff8-ab30-4f14-9f32-f80fa703ff1c
-# ╠═e4e895b7-19f4-4eb5-9536-c1a729fd8fcf
+# ╟─e4e895b7-19f4-4eb5-9536-c1a729fd8fcf
 # ╟─86a64b87-1085-41e0-a0b4-e846bae2ffba
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75
