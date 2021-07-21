@@ -16,6 +16,12 @@ end
 # ╔═╡ 992f5882-98c6-47e4-810c-81293a396c75
 using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs
 
+# ╔═╡ 0105efdf-7bb8-47c0-9b28-e3ed066b067d
+situatieschets = load("./assets/img/profiel_1.jpg")
+
+# ╔═╡ 940cf22e-e994-423d-bfb5-1b54259d29ee
+PlutoUI.TableOfContents()
+
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
 De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de resulterende belasting begroot ter hoogte van de bovenzijde van de muren van het gelijkvloers. Op onderstaande figuur wordt een onderschijdt gemaakt tussen muren met een dragende functie en deze met een niet dragende functie."
@@ -69,6 +75,12 @@ md"""
 # ╔═╡ 99a918eb-1cf3-48fe-807b-3807c3189faa
 md"Definieer in onderstaande tabel de verschillende belastingsgevallen"
 
+# ╔═╡ afcd9073-7f33-40ea-ab3a-9d9b4fb56f0f
+geom = (
+	a =	2.473,
+	L = 3.995
+)
+
 # ╔═╡ 901d9ca8-d25d-4e61-92e4-782db7fd1701
 md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wordt gerekend met het $\psi_1$ gelijk aan $0.5$ voor de **nuttige overlast** in de *frequente* combinatie, dit volgens Categorie A volgens NBN EN 1990."
 
@@ -106,6 +118,12 @@ end
 md"""
 ### Oplossing belastingsschema
 Met behulp van het **superpositiebeginsel** generaliseren we het probleem door een samenstel van de effecten, $V$, $M$, $\alpha$ en $v$, door de afzonderlijke aangrijpende belastingen te nemen.
+"""
+
+# ╔═╡ d1c0a33a-8860-4530-90ed-f176ebbfde8e
+md"""
+!!! danger "Opgepast!"
+	Bij het gebruiken van de syntax `R11(deel...)` moet je opletten hoe `deel` is opgebouwd, immers worden de substituties niet gelijktijdig uitgevoerd, maar één voor één, en telkens wordt de formule geëvalueerd en vereenvoudigd. Dus pas je `a => b` (`a` naar `b`) aan en dan `b => L` (`b` naar `L`), dan wordt de eerder omzetting dus ook verder doorgevoerd.
 """
 
 # ╔═╡ 7badb26d-2b53-422e-889a-1c17e009a933
@@ -148,7 +166,9 @@ md"Onderstaande tabel bevat de **gesubstitueerde** generieke oplossingen"
 md"Hieronder wordt een **overzicht tabel** weergegeven, waarbij de minimum en maximum waardes van de verschillende effecten, zijnde $V$, $M$, $\alpha$ en $v$ worden weergegeven"
 
 # ╔═╡ d99644ec-8b84-47a7-81a7-f87657cf3820
-md"Maak grafieken aan"
+md"""
+#### Maak grafieken aan
+"""
 
 # ╔═╡ e449b656-9f2b-4e34-b97f-12a9d75c7d22
  function grafiek(r) 
@@ -195,7 +215,25 @@ begin
 end
 
 # ╔═╡ 8259693e-9b40-4579-81f4-b1a137dfccb2
-DBInterface.execute(db, "SELECT * FROM sections WHERE name IN ('HE 220 A', 'HE 200 A', 'HE 220 B', 'HE 200 B') ORDER BY Iz ASC;") |> DataFrame |> t -> t[:, [:name, :b, :h, :Iz]]
+DBInterface.execute(db, """
+SELECT
+	name, G, b, h, tw, tf, "Wel.y", Iy
+FROM (
+	SELECT
+		s.*,
+		ABS(s.Iy - (
+				SELECT
+					t.Iy FROM sections AS t
+				WHERE
+					t.name = "$(ligger[:naam])")) AS afstand
+	FROM
+		sections AS s
+	ORDER BY
+		afstand ASC
+	LIMIT 10)
+ORDER BY
+	Iy ASC;	
+""") |> DataFrame
 
 # ╔═╡ 43453fa0-512b-4960-a0bb-fb44e538b6a6
 profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$(ligger[:naam])';") |> DataFrame
@@ -203,7 +241,7 @@ profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$(ligger
 # ╔═╡ c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 md"""
 # Berekening $naam - $(profiel[1, "name"])
-Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
+Bereking van **$naam**, een eenvoudig opgelegde ligger boven het keukeneiland. Het profiel ondersteund de vloer van de badkamer en een deel van de dragende wand. Lasten zijn afkomstig van het dak tot het eerste verdiep, meer specifiek **muur 4** en **muur 5**. Er wordt gerekened met een **nuttige belasting** van $200 kN/m^2$ en een krachtsafdracht van de vloeroppervlaktes tussen de draagmuren (dus **krachtsafdracht** in **1 richting**)
 """
 
 # ╔═╡ 7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
@@ -231,8 +269,8 @@ maatgevend = unstack(combine(groupby(resultaatklasse, [:naam, :check]), :uitkoms
 
 # ╔═╡ 4b9528fc-554f-49df-8fb8-49613f892e36
 rvw = begin
-	maatgevend[!, "a"] .= 2.473
-	maatgevend[!, "L"] .= 3.995
+	maatgevend[!, "a"] .= geom[:a]
+	maatgevend[!, "L"] .= geom[:L]
 	maatgevend
 end
 
@@ -916,15 +954,18 @@ v1 = SymPy.simplify(v3(BC31...)) # volgens gekozen lengteenheid
 v = v1(deel1...) + v1(deel2...)
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
-opl = select(rvw, :, AsTable(DataFrames.Not(:check)) => ByRow(r -> fn(r).([V, M, α, v])) => [:V, :M, :α, :v])
+opl = select(rvw, :, AsTable(DataFrames.Not(:check)) => 
+	ByRow(r -> 
+		fn(r).([V,M,α,v])) => [:V, :M, :α, :v]
+)
 
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
 overzicht = select(opl, :check, :L,
 	AsTable(:) => ByRow(r -> [
-			r.V.(0:0.1:5),
-			r.M.(0:0.1:5),
-			r.α.(0:0.1:5),
-			r.v.(0:0.1:5)
+			r.V.(0:0.1:geom[:L]),
+			r.M.(0:0.1:geom[:L]),
+			r.α.(0:0.1:geom[:L]),
+			r.v.(0:0.1:geom[:L])
 	] .|> (rnd ∘ extrema)) => [:V, :M, :α, :v]
 )
 
@@ -2713,6 +2754,8 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
+# ╟─0105efdf-7bb8-47c0-9b28-e3ed066b067d
+# ╟─940cf22e-e994-423d-bfb5-1b54259d29ee
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
@@ -2720,7 +2763,7 @@ version = "0.9.1+5"
 # ╠═56f65932-b5b1-44c1-bfc3-957b8a4b7f26
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
-# ╠═8259693e-9b40-4579-81f4-b1a137dfccb2
+# ╟─8259693e-9b40-4579-81f4-b1a137dfccb2
 # ╠═6a9c1261-36f0-4e25-b6a5-e48428994568
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
@@ -2736,6 +2779,7 @@ version = "0.9.1+5"
 # ╟─ddeaf6b6-5e91-46fa-adf8-026bf6933dee
 # ╟─3bb458cb-1a11-4102-b588-ab67cbcb28da
 # ╟─99a918eb-1cf3-48fe-807b-3807c3189faa
+# ╠═afcd9073-7f33-40ea-ab3a-9d9b4fb56f0f
 # ╟─7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
@@ -2748,13 +2792,14 @@ version = "0.9.1+5"
 # ╟─78a060bd-f930-4205-a956-abbb72797c1c
 # ╟─f8f0fd29-3268-4d4a-bba6-316eb0b3e964
 # ╟─5bacbd35-70eb-401d-bb62-23f6c17410b0
-# ╠═43453fa0-512b-4960-a0bb-fb44e538b6a6
+# ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
 # ╠═03e08a96-29c2-4921-b107-ded3f7dce079
 # ╟─7828d5a1-0a0a-45e5-acf1-a287638eb582
-# ╟─54a849f3-51ee-43e3-a90c-672046d3afa8
+# ╠═54a849f3-51ee-43e3-a90c-672046d3afa8
 # ╠═a1b7232f-4c34-4bd7-814a-2bacc4cb1fb4
 # ╠═5c4d049a-a2c4-48dc-a0dd-8199153c831a
 # ╟─b66c98c7-fcbc-4d04-a1dc-9452cae611a9
+# ╟─d1c0a33a-8860-4530-90ed-f176ebbfde8e
 # ╟─7badb26d-2b53-422e-889a-1c17e009a933
 # ╟─5d5aeb91-0507-4cab-8151-8b19389bb720
 # ╟─a34c804b-399a-4e40-a556-1e590757d048
@@ -2773,15 +2818,15 @@ version = "0.9.1+5"
 # ╠═84f36442-a43b-4488-b700-8cd399c20e4f
 # ╟─45618fab-0dc4-43c3-ab0f-d24490e88695
 # ╟─5fc33aba-e51e-4968-9f27-95e8d77cf9f1
-# ╠═b91ad51c-f9f7-4236-8040-1959533f1793
+# ╟─b91ad51c-f9f7-4236-8040-1959533f1793
 # ╟─0823262b-1e9d-4288-abd4-48c6f0894457
 # ╟─40fe2709-43b6-419c-9acb-2b2763345811
 # ╟─d99644ec-8b84-47a7-81a7-f87657cf3820
-# ╠═893f1b7d-2ec4-40d4-b905-3021c943d73a
+# ╟─893f1b7d-2ec4-40d4-b905-3021c943d73a
 # ╟─e449b656-9f2b-4e34-b97f-12a9d75c7d22
 # ╟─454abf3b-b2a0-4d58-acfc-d3ff4a9e0255
 # ╠═24bb7ff8-ab30-4f14-9f32-f80fa703ff1c
-# ╠═e4e895b7-19f4-4eb5-9536-c1a729fd8fcf
+# ╟─e4e895b7-19f4-4eb5-9536-c1a729fd8fcf
 # ╟─86a64b87-1085-41e0-a0b4-e846bae2ffba
 # ╟─2b4be6eb-8ad5-422a-99d8-a45a20e02c69
 # ╠═992f5882-98c6-47e4-810c-81293a396c75

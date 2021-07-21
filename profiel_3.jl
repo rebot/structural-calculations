@@ -17,7 +17,10 @@ end
 using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs, Underscores
 
 # ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
-situatie = load("./assets/img/profiel_3.jpg")
+situatieschets = load("./assets/img/profiel_3.jpg")
+
+# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
+PlutoUI.TableOfContents()
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -34,7 +37,13 @@ load("./assets/img/indeling.jpg")
 
 # ╔═╡ 31851342-e653-45c2-8df6-223593a7f942
 md"## Probleemstelling: Hyperstatische ligger met 1 tussensteunpunt
-Hyperstatische ligger met 1 tussensteunpunt en 3 variabele belastingen"
+Hyperstatische ligger met 1 tussensteunpunt en 3 variabele belastingen. Uit de berekening moet blijken dat de kracht direct wordt opgenomen door het steunpunt indien het zich $\infty$ stijf gedraagd. In realiteit heeft het steunpunt een axiale stijfheid, deze wordt becijferd en meegenomen in de berekening."
+
+# ╔═╡ 6f60b828-1815-4849-a6c9-4f5949fcc74f
+md"""
+!!! info "Veerstijfheid van het steunpunt"
+	Om enige veiligheid in de berekening mee te nemen, wordt het tussensteunpunt als een veer gemodelleerd, hierbij is de volgende wet van kracht: $F = k\cdot v$ waarbij $k$ voor de veerconstante staat, die op zich gelijk is aan $k = \text{EA}/L$, de axiale stijfheid van de ondersteunende kolom. Een vork van stijfheden wordt toegepast in de berekening, waarbij de axiale stijfheid wordt vermenigvuldigd met $\left[1/\sqrt{2}; 1; \infty\right]$.
+"""
 
 # ╔═╡ 883ced2c-2403-4c81-8d80-8f99536ffbe8
 naam = "Profiel 3"
@@ -44,7 +53,7 @@ md"Naam van het profiel; $\text{naam}$ = $naam"
 
 # ╔═╡ 7578c2d4-1115-4463-b74e-9330d1ecd96c
 ligger = (
-	naam = "HE 140 A",
+	naam = "IPE 180",
 	kwaliteit = "S235"
 )
 
@@ -142,7 +151,7 @@ end (800) (170)
 # ╔═╡ 3bb458cb-1a11-4102-b588-ab67cbcb28da
 md"""
 !!! note "Te definiëren parameters"
-	In de tabel met de **randvoorwaarden** (`rvw`) geef je de parameters $a$, $L$, $p_1$ en $p_2$ in, alsook de grenstoestand (`:UGT` of `:GGT`). De parameters die je moet invullen volgen uit de **generalisering** dat in een volgende paragraaf is opgesteld.
+	In de tabel met de **randvoorwaarden** (`rvw`) geef je de parameters $a$, $x_steun$, $L$, $p_1$ en $p_2$ in, alsook de grenstoestand (`:UGT` of `:GGT`). De parameters die je moet invullen volgen uit de **generalisering** dat in een volgende paragraaf is opgesteld.
 """
 
 # ╔═╡ 99a918eb-1cf3-48fe-807b-3807c3189faa
@@ -165,10 +174,10 @@ geom = (
 )
 
 # ╔═╡ 73513686-5ef4-46b6-8459-6d7f1dccb88b
-verh_m10_1 = @_ schema |> __[:a] / __[:b] 
+verh_m10_1 = @_ schema |> __[:a] / __[:b] # Verhouding deel 1 t.o.v deel 1 + 2
 
 # ╔═╡ ca356c21-9b46-4f05-aabe-9304874b8b8a
-verh_m10_2 = 1 - verh_m10_1 
+verh_m10_2 = 1 - verh_m10_1 # Verhouding deel 2 t.o.v deel 1 + 2
 
 # ╔═╡ 901d9ca8-d25d-4e61-92e4-782db7fd1701
 md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wordt gerekend met het $\psi_1$ gelijk aan $0.5$ voor de **nuttige overlast** in de *frequente* combinatie, dit volgens Categorie A volgens NBN EN 1990."
@@ -468,12 +477,6 @@ begin
 	Plots.scalefontsizes() 		# Reset the font
 	Plots.scalefontsizes(2/3)	# Make the font 2 times smaller
 end
-
-# ╔═╡ 6ac14820-12f2-414e-80e7-df6d8ec36e77
-md"Toon een *table of contents*"
-
-# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
-PlutoUI.TableOfContents()
 
 # ╔═╡ a841663b-a218-445f-8249-a28a766cbde5
 md"Symbolische notatie wordt gehanteerd om de basis op te stellen. Het opstellen van de vergelijken doen we via `SymPy`, bekend vanuit **Python**. Het pakket kun je aanroepen via `PyCall`, wat we ook zullen doen voor enkele functies, maar kan ook via `SymPy.jl` dat wat *Julia* specifieke syntax toevoegd om gebruik te maken van het pakket. Doordat in de *backend* verbinding wordt gelegd met een *Python* omgeving, is snelheid beperkt:
@@ -976,23 +979,23 @@ end (800) (150)
 # ╔═╡ e0f01459-d164-4cac-a5eb-a65aa3f466d9
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
 
-# ╔═╡ 2dc0930e-6807-4ca6-8b49-fb5fafb41d52
-R31 = ((p_a + p_b) / 2 * (b - a) * (p_a * (L - a) + p_b * (L - b)) / (p_a + p_b)) / L
-
-# ╔═╡ fd639425-e97f-4eb0-928b-f1479b09cae6
-R11 = SymPy.simplify(R31(BC31...))
-
-# ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
-R1 = R11(deel1...) + R11(deel2...) + R11(deel3...) + R21(deel4...)
-
 # ╔═╡ 6472775b-5fc7-493c-a71c-7aed44657e4c
-R32 = ((p_a + p_b) / 2 * (b - a) * (p_a * a + p_b * b) / (p_a + p_b)) / L
+R32 = (p_a * (b - a) * (a + b) / 2 + (p_b - p_a) * (b - a) * (a + 2 * b) / 3) / L
 
 # ╔═╡ 90ad790e-78a9-4a65-89ef-887d3ffcc54f
 R12 = SymPy.simplify(R32(BC31...))
 
 # ╔═╡ dfd9aed7-9922-4a47-a0b9-20b0bae0ccbf
 R2 = R12(deel1...) + R12(deel2...) + R12(deel3...) + R22(deel4...)
+
+# ╔═╡ 2dc0930e-6807-4ca6-8b49-fb5fafb41d52
+R31 = (p_a + p_b) / 2 * (b - a) - R32
+
+# ╔═╡ fd639425-e97f-4eb0-928b-f1479b09cae6
+R11 = SymPy.simplify(R31(BC31...))
+
+# ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
+R1 = R11(deel1...) + R11(deel2...) + R11(deel3...) + R21(deel4...)
 
 # ╔═╡ d348331c-7418-4f8b-a749-64f7ee824cb6
 md"#### 3.1 Bepalen dwarskracht $V(t)$"
@@ -2955,14 +2958,16 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 # ╟─d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
+# ╟─7232ab53-f2df-45e5-bf9b-f3997de5d3f2
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
 # ╟─31851342-e653-45c2-8df6-223593a7f942
+# ╟─6f60b828-1815-4849-a6c9-4f5949fcc74f
 # ╠═883ced2c-2403-4c81-8d80-8f99536ffbe8
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
-# ╠═fe346e35-b9c5-4a66-a0f3-0ffcef7ef2a7
+# ╟─fe346e35-b9c5-4a66-a0f3-0ffcef7ef2a7
 # ╠═7578c2d4-1115-4463-b74e-9330d1ecd96c
 # ╠═08fc052c-201f-4851-beca-3ca42751fc88
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
@@ -2987,7 +2992,7 @@ version = "0.9.1+5"
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
 # ╟─8c7359a5-4daf-4c6e-b92a-75b96636b26c
-# ╠═1383f2c6-12fa-4a36-8462-391131d1aaee
+# ╟─1383f2c6-12fa-4a36-8462-391131d1aaee
 # ╠═4b9528fc-554f-49df-8fb8-49613f892e36
 # ╟─8d2a4c22-579c-4e92-a36d-4f5a763a9395
 # ╟─020b1acb-0966-4563-ab52-79a565ed2252
@@ -2998,18 +3003,18 @@ version = "0.9.1+5"
 # ╟─43453fa0-512b-4960-a0bb-fb44e538b6a6
 # ╠═03e08a96-29c2-4921-b107-ded3f7dce079
 # ╟─7828d5a1-0a0a-45e5-acf1-a287638eb582
-# ╟─54a849f3-51ee-43e3-a90c-672046d3afa8
+# ╠═54a849f3-51ee-43e3-a90c-672046d3afa8
 # ╠═a1b7232f-4c34-4bd7-814a-2bacc4cb1fb4
 # ╠═5c4d049a-a2c4-48dc-a0dd-8199153c831a
 # ╟─0852a3af-3fce-4434-a677-4968acea37d4
-# ╠═a2086ea8-a1ef-4044-a858-1aa584e72ccd
+# ╟─a2086ea8-a1ef-4044-a858-1aa584e72ccd
 # ╠═38c8e617-2955-4f9e-a47a-9aa47138f131
 # ╠═796ec35c-1e1b-4126-891c-242d0de119f6
 # ╠═9007ecac-6673-4a08-847f-6d045a424c31
 # ╠═fd3a6512-bdcb-4963-ae2c-c9f82ffb4464
 # ╟─b66c98c7-fcbc-4d04-a1dc-9452cae611a9
 # ╟─0bcb8652-280f-41ca-83b8-df2b07113576
-# ╟─7badb26d-2b53-422e-889a-1c17e009a933
+# ╠═7badb26d-2b53-422e-889a-1c17e009a933
 # ╟─5d5aeb91-0507-4cab-8151-8b19389bb720
 # ╟─a34c804b-399a-4e40-a556-1e590757d048
 # ╟─6d812a7f-93e4-4d83-8c38-88d1c92f92cf
@@ -3053,8 +3058,6 @@ version = "0.9.1+5"
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
 # ╟─a3aa1221-123b-4c8c-87ae-db7116c443fb
 # ╠═137f4eb4-9e67-4991-95e6-f31b3fa6cd11
-# ╟─6ac14820-12f2-414e-80e7-df6d8ec36e77
-# ╠═7232ab53-f2df-45e5-bf9b-f3997de5d3f2
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
 # ╠═8d67ceaf-7303-4fb2-9577-a7fd2db6d233
 # ╟─048926fe-0fa3-44c4-8772-0e4adae576a4

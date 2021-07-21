@@ -193,7 +193,7 @@ md"Hieronder wordt een **overzicht tabel** weergegeven, waarbij de minimum en ma
 # ╔═╡ 40fe2709-43b6-419c-9acb-2b2763345811
 md"""
 In geval van een **gevoeligheidsanalyse** en/of hyperstatisch
-```julia
+```julia hide
 overzicht = combine(
 	groupby(
 		select(opl, :check, :L,

@@ -17,7 +17,10 @@ end
 using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON, Luxor, DotEnv, SQLite, DataFrames, UUIDs, Underscores
 
 # ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
-load("./assets/img/profiel_5.jpg")
+situatieschets = load("./assets/img/profiel_5.jpg")
+
+# ╔═╡ ece68d5e-1cb3-44e7-8c74-ca910d293ce9
+PlutoUI.TableOfContents()
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -39,7 +42,7 @@ Hyperstatische ligger met 1 tussensteunpunt, 2 variabele lijnlasten en 1 puntlas
 # ╔═╡ 001ddb8b-3a71-48f8-adcc-a957741d57b1
 md"""
 !!! info "Veerstijfheid van het steunpunt"
-	Om enige veiligheid in de berekening mee te nemen, wordt het tussensteunpunt als een veer gemodelleerd, hierbij is de volgende wet van kracht: $F = k\cdot v$ waarbij $k$ voor de veerconstante staat, die op zich gelijk is aan $k = \text{EA}/L$, de axiale stijfheid van de ondersteunende kolom. Een vork van stijfheden wordt toegepast in de berekening, waarbij de axiale stijfheid wordt vermenigvuldigd met $\left[1/\sqrt{2}; 1; \sqrt{2}\right]$.
+	Om enige veiligheid in de berekening mee te nemen, wordt het tussensteunpunt als een veer gemodelleerd, hierbij is de volgende wet van kracht: $F = k\cdot v$ waarbij $k$ voor de veerconstante staat, die op zich gelijk is aan $k = \text{EA}/L$, de axiale stijfheid van de ondersteunende kolom. Een vork van stijfheden wordt toegepast in de berekening, waarbij de axiale stijfheid wordt vermenigvuldigd met $\left[1/\sqrt{2}; 1; \infty\right]$.
 """
 
 # ╔═╡ 4ce3251e-f45c-4546-81b8-2e08d4ec9964
@@ -143,7 +146,7 @@ end (800) (170)
 # ╔═╡ 3bb458cb-1a11-4102-b588-ab67cbcb28da
 md"""
 !!! note "Te definiëren parameters"
-	In de tabel met de **randvoorwaarden** (`rvw`) geef je de parameters $a$, $L$, $p_1$ en $p_2$ in, alsook de grenstoestand (`:UGT` of `:GGT`). De parameters die je moet invullen volgen uit de **generalisering** dat in een volgende paragraaf is opgesteld.
+	In de tabel met de **randvoorwaarden** (`rvw`) geef je de parameters $a$, $x_steun$, $L$, $p_1$ en $p_2$ in, alsook de grenstoestand (`:UGT` of `:GGT`). De parameters die je moet invullen volgen uit de **generalisering** dat in een volgende paragraaf is opgesteld.
 """
 
 # ╔═╡ 99a918eb-1cf3-48fe-807b-3807c3189faa
@@ -155,6 +158,18 @@ geom = (
 	x_steun = 5.40 - 2.04,
 	L = 5.40
 )
+
+# ╔═╡ d0ad3ac3-771c-4266-9564-38a836ab4df0
+opp_badkamer = 3.9 * 3.9 # m²
+
+# ╔═╡ 97c8c6de-ed1b-42ba-8024-af8d86caf252
+opp_kamer3 = 5.2 * 4 # m²
+
+# ╔═╡ 54af6858-4010-493c-a730-2e1e14ec0aee
+verh_m13_1 = (geom[:L] - geom[:a]) / 3.9 # Verhouding deel 1 t.o.v. muur 13
+
+# ╔═╡ d75d858b-33e2-45d4-9e60-424048dc0c67
+verh_m15_2 = geom[:a] / 4 # Verhouding deel 2 t.o.v. muur 15
 
 # ╔═╡ 901d9ca8-d25d-4e61-92e4-782db7fd1701
 md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wordt gerekend met het $\psi_1$ gelijk aan $0.5$ voor de **nuttige overlast** in de *frequente* combinatie, dit volgens Categorie A volgens NBN EN 1990."
@@ -346,6 +361,27 @@ begin
 	"""
 end
 
+# ╔═╡ a45968e2-42a0-4307-bcf6-4ea559024799
+DBInterface.execute(db, """
+SELECT
+	name, G, b, h, tw, tf, "Wel.y", Iy
+FROM (
+	SELECT
+		s.*,
+		ABS(s.Iy - (
+				SELECT
+					t.Iy FROM sections AS t
+				WHERE
+					t.name = "$(ligger[:naam])")) AS afstand
+	FROM
+		sections AS s
+	ORDER BY
+		afstand ASC
+	LIMIT 10)
+ORDER BY
+	Iy ASC;	
+""") |> DataFrame
+
 # ╔═╡ 43453fa0-512b-4960-a0bb-fb44e538b6a6
 profiel = DBInterface.execute(db, "SELECT * FROM sections WHERE name = '$(ligger[:naam])';") |> DataFrame
 
@@ -359,16 +395,16 @@ Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekend met 
 
 # ╔═╡ 7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 belastingsgevallen = DataFrame([
-	(naam="g1", waarde=20, beschrijving="Perm. last - lastendaling"),
-	(naam="g2", waarde=30, beschrijving="Perm. last - lastendaling"),
-	(naam="G", waarde=10, beschrijving="Perm. last - lastendaling"),	
+	(naam="g1", waarde=(18.797 + 0.2 * opp_badkamer * 3.07) * verh_m13_1 , beschrijving="Perm. last - lastendaling"),
+	(naam="g2", waarde=(17.577 + 0.18 * opp_kamer3 * 3.07) * verh_m15_2, beschrijving="Perm. last - lastendaling"),
+	(naam="G", waarde=150, beschrijving="Perm. last - lastendaling"),	
 	(naam="gp", waarde=profiel[1, "G"] * 0.01, beschrijving="Perm. last - profiel"),
-	(naam="q1_vloer", waarde=10, beschrijving="Var. last - nuttige overlast"),
-	(naam="q2_vloer", waarde=15, beschrijving="Var. last - nuttige overlast"),
-	(naam="Q_vloer", waarde=5, beschrijving="Var. last - nuttige overlast"),
-	(naam="q1_sneeuw", waarde=2, beschrijving="Var. last - sneeuwlast"),
-	(naam="q2_sneeuw", waarde=3, beschrijving="Var. last - sneeuwlast"),
-	(naam="Q_sneeuw", waarde=1, beschrijving="Var. last - sneeuwlast")
+	(naam="q1_vloer", waarde=(0.2 * opp_badkamer * 2.0) * verh_m13_1, beschrijving="Var. last - nuttige overlast"),
+	(naam="q2_vloer", waarde=(0.18 * opp_kamer3 * 2.0) * verh_m15_2, beschrijving="Var. last - nuttige overlast"),
+	(naam="Q_vloer", waarde=60, beschrijving="Var. last - nuttige overlast"),
+	(naam="q1_sneeuw", waarde=(4.01) * verh_m13_1, beschrijving="Var. last - sneeuwlast"),
+	(naam="q2_sneeuw", waarde=(4.01) * verh_m15_2, beschrijving="Var. last - sneeuwlast"),
+	(naam="Q_sneeuw", waarde=20, beschrijving="Var. last - sneeuwlast")
 ])
 
 # ╔═╡ 8c7359a5-4daf-4c6e-b92a-75b96636b26c
@@ -432,12 +468,6 @@ begin
 	Plots.scalefontsizes() 		# Reset the font
 	Plots.scalefontsizes(2/3)	# Make the font 2 times smaller
 end
-
-# ╔═╡ 6ac14820-12f2-414e-80e7-df6d8ec36e77
-md"Toon een *table of contents*"
-
-# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
-PlutoUI.TableOfContents()
 
 # ╔═╡ a841663b-a218-445f-8249-a28a766cbde5
 md"Symbolische notatie wordt gehanteerd om de basis op te stellen. Het opstellen van de vergelijken doen we via `SymPy`, bekend vanuit **Python**. Het pakket kun je aanroepen via `PyCall`, wat we ook zullen doen voor enkele functies, maar kan ook via `SymPy.jl` dat wat *Julia* specifieke syntax toevoegd om gebruik te maken van het pakket. Doordat in de *backend* verbinding wordt gelegd met een *Python* omgeving, is snelheid beperkt:
@@ -2919,6 +2949,7 @@ version = "0.9.1+5"
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
 # ╟─d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
+# ╟─ece68d5e-1cb3-44e7-8c74-ca910d293ce9
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
 # ╟─6a04789a-c42a-4ac9-8d05-ee20442ad60d
@@ -2927,6 +2958,7 @@ version = "0.9.1+5"
 # ╠═4ce3251e-f45c-4546-81b8-2e08d4ec9964
 # ╟─a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 # ╟─3e479359-d1a8-4036-8e9c-04317efde55a
+# ╟─a45968e2-42a0-4307-bcf6-4ea559024799
 # ╠═ab13bfac-70c7-4b36-ba3f-988a96555af5
 # ╠═ba610d7b-89bf-4ed7-b4b5-4753e9ebc28d
 # ╟─882a3f47-b9f0-4a92-98b2-881f8ce84f6d
@@ -2944,6 +2976,10 @@ version = "0.9.1+5"
 # ╟─3bb458cb-1a11-4102-b588-ab67cbcb28da
 # ╟─99a918eb-1cf3-48fe-807b-3807c3189faa
 # ╠═28e28737-8800-4d9f-a758-5640d14519b9
+# ╠═d0ad3ac3-771c-4266-9564-38a836ab4df0
+# ╠═97c8c6de-ed1b-42ba-8024-af8d86caf252
+# ╠═54af6858-4010-493c-a730-2e1e14ec0aee
+# ╠═d75d858b-33e2-45d4-9e60-424048dc0c67
 # ╟─7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 # ╟─901d9ca8-d25d-4e61-92e4-782db7fd1701
 # ╟─9369fece-8b5e-4817-aee3-3476d43e1c2c
@@ -2963,7 +2999,7 @@ version = "0.9.1+5"
 # ╠═a1b7232f-4c34-4bd7-814a-2bacc4cb1fb4
 # ╠═5c4d049a-a2c4-48dc-a0dd-8199153c831a
 # ╟─8eea80b3-9824-4c5a-b1e7-76244ecadeb6
-# ╠═88658420-969a-4786-87ad-bc56455503f8
+# ╟─88658420-969a-4786-87ad-bc56455503f8
 # ╠═2eb8de93-f0a2-402e-98a6-474a483acb06
 # ╠═1cebf7c3-566f-43ac-ae1c-4ade8d6b3dfe
 # ╠═18874aab-46ce-41ab-a275-6fd13ed088b4
@@ -3014,8 +3050,6 @@ version = "0.9.1+5"
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
 # ╟─a3aa1221-123b-4c8c-87ae-db7116c443fb
 # ╠═137f4eb4-9e67-4991-95e6-f31b3fa6cd11
-# ╟─6ac14820-12f2-414e-80e7-df6d8ec36e77
-# ╠═7232ab53-f2df-45e5-bf9b-f3997de5d3f2
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
 # ╠═8d67ceaf-7303-4fb2-9577-a7fd2db6d233
 # ╟─048926fe-0fa3-44c4-8772-0e4adae576a4
