@@ -53,7 +53,7 @@ md"Naam van het profiel; $\text{naam}$ = $naam"
 
 # ╔═╡ 7578c2d4-1115-4463-b74e-9330d1ecd96c
 ligger = (
-	naam = "HE 220 A",
+	naam = "HE 200 B",
 	kwaliteit = "S235"
 )
 
@@ -1119,7 +1119,7 @@ md"#### 3.2 Bepalen moment $M(t)$"
 # ╔═╡ 6b6bc466-64b9-4c3a-9e30-ffea398c51aa
 begin
 	M31 = R31 .* t 			# Van t: 0 -> a
-	M32 = R31 .* t - ((p_a .+ p_t) ./ 2) .* (p_a / (p_a + p_t)) .* (t .- a) ^ 2  
+	M32 = R31 .* t - (2 * p_a + p_t) / 6 .* (t .- a) .^ 2  # Van t: a -> b
 	M33 = R32 .* (L .- t) 	# Van t: b -> L
 	M3 = M31 .* interval(t, -1e-10, a) .+ M32 .* interval(t, a, b) .+ M33 .* interval(t, b, L)
 end

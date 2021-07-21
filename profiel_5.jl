@@ -970,23 +970,23 @@ end (800) (150)
 # ╔═╡ e0f01459-d164-4cac-a5eb-a65aa3f466d9
 md"Moment in de steunpunten = $0$ $\rightarrow$ evenwicht er rond uitschrijven ter bepalen van de steunpuntsreacties"
 
-# ╔═╡ 2dc0930e-6807-4ca6-8b49-fb5fafb41d52
-R31 = ((p_a + p_b) / 2 * (b - a) * (p_a * (L - a) + p_b * (L - b)) / (p_a + p_b)) / L
-
-# ╔═╡ fd639425-e97f-4eb0-928b-f1479b09cae6
-R11 = SymPy.simplify(R31(BC31...))
-
-# ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
-R1 = R11(deel1...) + R11(deel2...) + R21(deel3...) + R21(deel4...)
-
 # ╔═╡ 6472775b-5fc7-493c-a71c-7aed44657e4c
-R32 = ((p_a + p_b) / 2 * (b - a) * (p_a * a + p_b * b) / (p_a + p_b)) / L
+R32 = (p_a * (b - a) * (a + b) / 2 + (p_b - p_a) * (b - a) * (a + 2 * b) / 3) / L
 
 # ╔═╡ 90ad790e-78a9-4a65-89ef-887d3ffcc54f
 R12 = SymPy.simplify(R32(BC31...))
 
 # ╔═╡ dfd9aed7-9922-4a47-a0b9-20b0bae0ccbf
 R2 = R12(deel1...) + R12(deel2...) + R22(deel3...) + R22(deel4...)
+
+# ╔═╡ 2dc0930e-6807-4ca6-8b49-fb5fafb41d52
+R31 = (p_a + p_b) / 2 * (b - a) - R32
+
+# ╔═╡ fd639425-e97f-4eb0-928b-f1479b09cae6
+R11 = SymPy.simplify(R31(BC31...))
+
+# ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
+R1 = R11(deel1...) + R11(deel2...) + R21(deel3...) + R21(deel4...)
 
 # ╔═╡ d348331c-7418-4f8b-a749-64f7ee824cb6
 md"#### 3.1 Bepalen dwarskracht $V(t)$"
@@ -1012,7 +1012,7 @@ md"#### 3.2 Bepalen moment $M(t)$"
 # ╔═╡ 6b6bc466-64b9-4c3a-9e30-ffea398c51aa
 begin
 	M31 = R31 .* t 			# Van t: 0 -> a
-	M32 = R31 .* t - ((p_a .+ p_t) ./ 2) .* (p_a / (p_a + p_t)) .* (t .- a) ^ 2  
+	M32 = R31 .* t - (2 * p_a + p_t) / 6 .* (t .- a) .^ 2  # Van t: a -> b  
 	M33 = R32 .* (L .- t) 	# Van t: b -> L
 	M3 = M31 .* interval(t, -1e-10, a) .+ M32 .* interval(t, a, b) .+ M33 .* interval(t, b, L)
 end
