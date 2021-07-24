@@ -53,7 +53,7 @@ md"Naam van het profiel; $\text{naam}$ = $naam"
 
 # ╔═╡ 7578c2d4-1115-4463-b74e-9330d1ecd96c
 ligger = (
-	naam = "HE 200 B",
+	naam = "HE 220 B",
 	kwaliteit = "S235"
 )
 
@@ -61,6 +61,11 @@ ligger = (
 md"""
 !!! danger "Opmerking"
 	Bij de controle in **UGT** wordt de momentweerstand niet verminderd in functie van de dwarskracht. Er wordt op toegezien dat de `Check 4` de waarde van $0.50$ niet overschrijdt. Indien de *Unity Check* groter is, dan grijpen we terug naar NBN EN 1993 om een aangepaste controle uit te voeren.
+"""
+
+# ╔═╡ d54678e5-8651-499c-bc0e-d1c05ffba208
+md"""
+Resulterende krachten ter hoogte van de steunpunten voor afdracht naar het profiel 5
 """
 
 # ╔═╡ 8f910bf3-5227-4113-9476-6136194a5e60
@@ -581,7 +586,7 @@ function controle(r::NamedTuple)
 		σ_ggt = (M_ggt / W_el) * 1000 # MPa
 		checks[1] = check1(σ_ggt, 0.8 * f_yd)
 		# Check 2 - Controleer de doorbuiging van de balk
-		v_lim = r.L / 500 * 1000 # mm
+		v_lim = schema[:x_steun] / 500 * 1000 # mm
 		v_max = maximum(r.v .|> (abs)) * 1000 # mm
 		checks[2] = check2(v_max, v_lim)
 	elseif r.check == :UGT
@@ -678,6 +683,12 @@ R2 = (p1 * a * a / 2 + p2 * (b - a) * (b + a) / 2 + p3 * (L - b) * (L + b) / 2) 
 
 # ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
 R1 = p1 * a + p2 * (b - a) + p3 * (L - b) - R2
+
+# ╔═╡ 3fb7c2b8-633c-4a3e-8f58-467c01d43262
+select(rvw, :,
+	AsTable(DataFrames.Not(:check)) => 
+		ByRow(r -> [R1, R2] .|> f -> f(Dict(keys(r) .|> eval .=> values(r))...) |> rnd) => [:R1, :R2]
+)
 
 # ╔═╡ 842f1dbd-32b7-4adf-a0c8-6ca6a5fb323d
 begin
@@ -2955,6 +2966,8 @@ version = "0.9.1+5"
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
 # ╟─542f69ac-77c5-47d7-be6c-94ba82a50ef7
+# ╟─d54678e5-8651-499c-bc0e-d1c05ffba208
+# ╟─3fb7c2b8-633c-4a3e-8f58-467c01d43262
 # ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╠═9364f897-0666-4ebe-9725-3c864db07b42
 # ╠═b93d2ce0-ac8a-4487-9d1d-0300db4a9df8

@@ -180,8 +180,8 @@ combinaties = DataFrame([
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
-	(check=:GGT, naam="F", formule="G + 0.5 * Q_vloer"),
-	(check=:UGT, naam="F", formule="1.35 * G + 1.5 * (Q_vloer + 0.5 * Q_sneeuw)"),
+	(check=:GGT, naam="F", formule="p12ggt"),
+	(check=:UGT, naam="F", formule="p12ugt"),
 ])
 
 # ╔═╡ 8d2a4c22-579c-4e92-a36d-4f5a763a9395
@@ -396,15 +396,14 @@ Lasten zijn afkomstig van het dak tot het eerste verdiep. Er wordt gerekend met 
 # ╔═╡ 7e9d76e1-ee9f-4b3c-bf5f-9b6901f192e6
 belastingsgevallen = DataFrame([
 	(naam="g1", waarde=(18.797 + 0.2 * opp_badkamer * 3.07) * verh_m13_1 , beschrijving="Perm. last - lastendaling"),
-	(naam="g2", waarde=(17.577 + 0.18 * opp_kamer3 * 3.07) * verh_m15_2, beschrijving="Perm. last - lastendaling"),
-	(naam="G", waarde=150, beschrijving="Perm. last - lastendaling"),	
+	(naam="g2", waarde=(17.577 + 0.18 * opp_kamer3 * 3.07) * verh_m15_2, beschrijving="Perm. last - lastendaling"),	
 	(naam="gp", waarde=profiel[1, "G"] * 0.01, beschrijving="Perm. last - profiel"),
 	(naam="q1_vloer", waarde=(0.2 * opp_badkamer * 2.0) * verh_m13_1, beschrijving="Var. last - nuttige overlast"),
 	(naam="q2_vloer", waarde=(0.18 * opp_kamer3 * 2.0) * verh_m15_2, beschrijving="Var. last - nuttige overlast"),
-	(naam="Q_vloer", waarde=60, beschrijving="Var. last - nuttige overlast"),
 	(naam="q1_sneeuw", waarde=(4.01) * verh_m13_1, beschrijving="Var. last - sneeuwlast"),
 	(naam="q2_sneeuw", waarde=(4.01) * verh_m15_2, beschrijving="Var. last - sneeuwlast"),
-	(naam="Q_sneeuw", waarde=20, beschrijving="Var. last - sneeuwlast")
+	(naam="p12ggt", waarde=124.729, beschrijving="GGT - Afdracht profiel 1 & 2"),
+	(naam="p12ugt", waarde=213.312, beschrijving="UGT - Afdracht profiel 1 & 2")
 ])
 
 # ╔═╡ 8c7359a5-4daf-4c6e-b92a-75b96636b26c

@@ -59,6 +59,11 @@ md"""
 	Bij de controle in **UGT** wordt de momentweerstand niet verminderd in functie van de dwarskracht. Er wordt op toegezien dat de `Check 4` de waarde van $0.50$ niet overschrijdt. Indien de *Unity Check* groter is, dan grijpen we terug naar NBN EN 1993 om een aangepaste controle uit te voeren.
 """
 
+# ╔═╡ 28e75f10-515e-466f-b538-6ad3697c3e7f
+md"""
+Resulterende krachten ter hoogte van de steunpunten voor afdracht naar het profiel 5
+"""
+
 # ╔═╡ 8f910bf3-5227-4113-9476-6136194a5e60
 md"### Beschrijving belastingsschema
 Definiëer de randvoorwaarden of *Boundary Conditions* $(\text{BC})$. Voor een **verdeelde belasting** geef je de parameters $a$, $b$, $L$ en $p$ in waarbij een *positieve* waarde van $p$ een neerwaartse belasting is. Voor een **puntbelasting** geef je de parameters $a$, $L$ en $p$ in. Ook de stijfheid $\text{EI}$."
@@ -306,12 +311,6 @@ begin
 	Plots.scalefontsizes() 		# Reset the font
 	Plots.scalefontsizes(2/3)	# Make the font 2 times smaller
 end
-
-# ╔═╡ 6ac14820-12f2-414e-80e7-df6d8ec36e77
-md"Toon een *table of contents*"
-
-# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
-PlutoUI.TableOfContents()
 
 # ╔═╡ a841663b-a218-445f-8249-a28a766cbde5
 md"Symbolische notatie wordt gehanteerd om de basis op te stellen. Het opstellen van de vergelijken doen we via `SymPy`, bekend vanuit **Python**. Het pakket kun je aanroepen via `PyCall`, wat we ook zullen doen voor enkele functies, maar kan ook via `SymPy.jl` dat wat *Julia* specifieke syntax toevoegd om gebruik te maken van het pakket. Doordat in de *backend* verbinding wordt gelegd met een *Python* omgeving, is snelheid beperkt:
@@ -846,6 +845,12 @@ R11 = SymPy.simplify(R31(BC31...))
 
 # ╔═╡ 04dafcd3-8568-426b-9c5f-b21fc09d5e88
 R1 = R11(deel1...) + R11(deel2...)
+
+# ╔═╡ a6e7c4fa-3e9c-48b8-8ea7-84aa093dc5b7
+select(rvw, :,
+	AsTable(DataFrames.Not(:check)) => 
+		ByRow(r -> [R1, R2] .|> f -> f(Dict(keys(r) .|> eval .=> values(r))...) |> rnd) => [:R1, :R2]
+)
 
 # ╔═╡ d348331c-7418-4f8b-a749-64f7ee824cb6
 md"#### 3.1 Bepalen dwarskracht $V(t)$"
@@ -2754,7 +2759,7 @@ version = "0.9.1+5"
 
 # ╔═╡ Cell order:
 # ╟─c4c79ab2-d6b7-11eb-09d0-e3cbf2c9d6e9
-# ╟─0105efdf-7bb8-47c0-9b28-e3ed066b067d
+# ╠═0105efdf-7bb8-47c0-9b28-e3ed066b067d
 # ╟─940cf22e-e994-423d-bfb5-1b54259d29ee
 # ╟─2a3d44ad-9ec2-4c21-8825-dbafb127f727
 # ╟─c6f5a862-cae1-4e9c-a905-72a4122c11a7
@@ -2769,6 +2774,8 @@ version = "0.9.1+5"
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
 # ╟─542f69ac-77c5-47d7-be6c-94ba82a50ef7
+# ╟─28e75f10-515e-466f-b538-6ad3697c3e7f
+# ╟─a6e7c4fa-3e9c-48b8-8ea7-84aa093dc5b7
 # ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╠═9364f897-0666-4ebe-9725-3c864db07b42
 # ╠═b93d2ce0-ac8a-4487-9d1d-0300db4a9df8
@@ -2836,8 +2843,6 @@ version = "0.9.1+5"
 # ╠═60615a85-81d3-4237-8ad4-e43e856b8902
 # ╟─a3aa1221-123b-4c8c-87ae-db7116c443fb
 # ╠═137f4eb4-9e67-4991-95e6-f31b3fa6cd11
-# ╟─6ac14820-12f2-414e-80e7-df6d8ec36e77
-# ╠═7232ab53-f2df-45e5-bf9b-f3997de5d3f2
 # ╟─a841663b-a218-445f-8249-a28a766cbde5
 # ╠═8d67ceaf-7303-4fb2-9577-a7fd2db6d233
 # ╟─048926fe-0fa3-44c4-8772-0e4adae576a4
