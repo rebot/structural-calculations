@@ -4,8 +4,17 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : missing
+        el
+    end
+end
+
 # ╔═╡ e8bc8487-8e7e-4e5f-a06e-193669f4cce9
-using PlutoUI, ImageView, Images, SymPy, Plots, Luxor, SQLite, DataFrames, Underscores
+using PlutoUI, ImageView, Images, SymPy, Plots, Luxor, SQLite, DataFrames, Underscores, Interpolations
 
 # ╔═╡ adad2d93-4973-4631-8255-f855d12a2848
 using UUIDs
@@ -18,8 +27,8 @@ PlutoUI.TableOfContents()
 
 # ╔═╡ 6fd93b12-b898-415c-93e1-5c3c6337bd9f
 md"""
-## Controle
-Controle van de draagkracht van de kolom. Controle in **GGT** en **UGT**. Bepalend is de knikcontrole van de kolom.
+## Conclussie
+Een controle van de draagkracht van de kolom is uitgevoerd, dit zowel in **GGT** als **UGT**. Onderstaande controles zijn uitgevoerd.
 
 Controles in **GGT**
 1. 
@@ -38,7 +47,7 @@ De geometrie is af te lezen op de *situatieschets*.
 
 # ╔═╡ 2562daf7-66f5-4b9d-8b6e-9b50095d4dd3
 geom = (
-	L = 2.9 # m - verdiepingshoogte = 2.7m - 0.22 voor het profiel + 0.38cm uitgr.
+	L = 2.9, # m - verdiepingshoogte = 2.7m - 0.22 voor het profiel + 0.38cm uitgr.
 )
 
 # ╔═╡ 2f321431-5f92-453c-bfb2-ce3c6f7f81a2
@@ -50,7 +59,8 @@ Profieldoorsnede
 kolom = (
 	naam = "SHS 120/5",
 	kwaliteit = "S235",
-	beschrijving = "Kolom 1"
+	beschrijving = "Kolom 1",
+	knikkromme = :a0
 )
 
 # ╔═╡ bf7ab900-ec7d-11eb-1a03-b5c7103e6e4c
@@ -58,6 +68,37 @@ md"""
 # Berekening $(kolom[:beschrijving]) - $(kolom[:naam])
 Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1** en **Profiel 2** ondersteund en staat op de hoek van de kelder.
 """
+
+# ╔═╡ 83113699-96e8-4cce-9101-37f016855b49
+md"""
+Haal de **eigenschappen** op van het gekozen profiel
+"""
+
+# ╔═╡ 65052451-ac16-458e-911b-17226c5355d7
+md"""
+Nominale waarde volgen *NBN EN 1993-1-1 §3.2*
+"""
+
+# ╔═╡ 1e3f7495-7255-4319-8a0d-3c2a66305d06
+f_yd = begin 
+	f_yk = parse(Int64, kolom[:kwaliteit][2:end]) # MPa = N/mm² - Representatieve waarde
+	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
+	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
+end
+
+# ╔═╡ 0d602b85-8c97-47f6-bdcd-3a5738b94371
+md"""
+Rekenwaarden van materiaaleigenschappen volgens *NBN EN 1991-1-1 §3.2.6*
+"""
+
+# ╔═╡ 15c1009a-be15-4780-8054-d30271af920c
+E = 210_000 # MPa
+
+# ╔═╡ 0de5f479-0eef-48bc-8146-757b4ff3b27d
+ν = 0.3 # Coëfficiënt van Poisson in het elastisch gebied
+
+# ╔═╡ bf5de147-27f7-4b05-8038-b7d3fe545466
+G = E / (2 * (1 + ν)) # MPa
 
 # ╔═╡ 5fbb513b-35fc-43cc-b81b-cb52dd572584
 md"""
@@ -88,7 +129,135 @@ combinaties = select!(
 ) # Schrijft het resultaat naar de combinaties
 
 # ╔═╡ 39feffd5-63b2-4f6d-8ffc-21e55ce0f31e
-combine(groupby(combinaties, [:check, :naam]), :uitkomst => extrema)
+maatgevend = unstack(
+	combine(
+		groupby(combinaties, [:check, :naam]),
+		:uitkomst => maximum => :waarde
+	), 
+	:check, 
+	:naam, 
+	:waarde
+)
+
+# ╔═╡ 0e483762-3725-418b-a67d-56c1815bc5ba
+rvw = begin
+	for (k, v) in pairs(geom)
+		maatgevend[!, k] .= v
+	end
+	copy(maatgevend)
+end
+
+# ╔═╡ c3a0091f-31ee-46e2-bf21-94da754b6cac
+md"""
+## Berekening
+Berekening van de aangrijpende krachtswerking
+
+Controle toepasbaarheid *1ste orderberekening* waard $F_{cr}$ de elastiche kritieke (knik)belasting en $F_{Ed}$ de rekenwaarde van de belastingen
+
+$$\alpha_{cr} = \dfrac{F_{cr}}{F_{Ed}} \geq 10 - \text{elastische berekening}$$
+$$\alpha_{cr} = \dfrac{F_{cr}}{F_{Ed}} \geq 15 - \text{plastische berekening}$$
+"""
+
+# ╔═╡ 92615040-32a4-400d-818f-5deaef931d66
+md"""
+### Geometrische imperfectie kolom
+Gemetrische imperfectie volgen *NBN EN 1993-1-1 §5.3.2* is afhankelijk van de knikkromme (bepaald volgens tabel 6.2)
+"""
+
+# ╔═╡ a6c1043b-70d7-4b42-a883-96e168f80045
+load("./assets/img/NBN EN 1993-1-1 fig 5.4.png")
+
+# ╔═╡ fe677e91-ab28-40e5-b270-163ac77a1dd1
+md"""
+Duiding van de scheefstand en vooruitbuiging en mogelijke **equivalente krachten** ter vervanging van de geometrische imperfecties
+"""
+
+# ╔═╡ 977c58d5-3bdb-4f34-baee-c5f3acc83155
+md"""
+#### Initiële scheefstand
+Draagt bij tot bijkomende knikgevoeligheid
+"""
+
+# ╔═╡ 32c60448-66f4-4d55-8282-abd76c7672a8
+md"""
+met
+"""
+
+# ╔═╡ b5cb73da-c8e6-417f-94a8-0f0fa5ae8321
+ϕ₀ = 1//200 # Basiswaarde van de scheefstand
+
+# ╔═╡ 6bc279ad-c26b-46e8-a738-32c5b43e6f96
+αₕ = max(min(2 / sqrt(geom[:L]), 1), 2//3)  # Reductiefactor voor de hoogte h
+
+# ╔═╡ ab4ff3ac-6045-48b0-af4d-546a4af69ae7
+αₘ = sqrt( 0.5 * (1 + 1 // (m = 1; m))) # Reductiefactor meerdere kolommen
+
+# ╔═╡ 23304671-76f0-4d3f-957d-0f2ebbefe54e
+ϕ = ϕ₀ * αₕ * αₘ |> rationalize 
+
+# ╔═╡ b7b47867-f469-46d4-a7e7-0da9f59c4b8c
+md"""
+#### Initiële vooruitbuiging
+Ter bepaling van de bijkomende buigingsknik - Bepaling van de verhouding $e_0 / L$ in functie van de knikkromme van de doorsnede, zie onderstaande tabel
+"""
+
+# ╔═╡ 5fc42b0d-0363-4087-acfe-962f3304fccf
+tabel5_1 = DataFrame(
+	knikkromme = [:a0, :a, :b, :c, :d],
+	elastisch = [1//350, 1//300, 1//250, 1//200, 1//150], 	# Grens e₀/L
+	plastisch = [1//300, 1//250, 1//200, 1//150, 1//100]	# Grens e₀/L
+)
+
+# ╔═╡ 3d0a7e42-8915-41b6-961c-ae45921b53e8
+e_0 = tabel5_1.elastisch[tabel5_1.knikkromme .== kolom[:knikkromme]] |> first
+
+# ╔═╡ 1c0069be-e284-46f3-8ebf-808029b0e8ce
+md"""
+### Interne krachtswerking
+De interne krachtswerking heeft invloed op de bepaling van de doorsnede, alsook op de verdere stabiliteitscontrole (knik problematiek)
+"""
+
+# ╔═╡ 79deccb1-5aab-4bfd-857f-55b17250527c
+md"""
+#### Spanningsverdeling in de doorsnede
+Voor een correcte inschatting van de classificatie van het profiel, moeten we de drukzone van de doorsnede kennen
+"""
+
+# ╔═╡ 49f763be-0741-4895-adcb-22efd0ad58e5
+begin
+	slider_tval = @bind tval Slider(0:0.01:geom[:L], show_value=true, default=1.05)
+	select_grenstoestand = @bind grenstoestand Select(["UGT", "GGT"], default="GGT")
+	md"""
+	Kies een locatie voor $t$: $slider_tval
+	
+	Kies een grenstoestand: $select_grenstoestand
+	"""
+end
+
+# ╔═╡ 565c0a79-02ab-4f09-838b-a8d5be5b328e
+md"""
+### Classificatie van de doorsnede
+Classificatie volgens doorsnede in categoriën die aangeven hoezeer de **weerstand** en **rotatiecapaciteit** zijn beperkt door de **plooiweerstand**. Voor een **klasse 1** bijvoorbeeld mag er zich een *plastisch scharnier* vormen zonder weerstandsverlies.
+
+**classificatie** = $f(\text{deel onder druk onder beschouwde belastingscombinatie})$
+"""
+
+# ╔═╡ da0eddc9-788d-4308-b458-54db04cd0fd2
+md"""
+Gebasseerd op het spanningsverloop langsheen de kolom (=$f(t)$) wordt de knikkromme bepaald via Tabel 5.2 in *NBN EN 1993-1-1*
+"""
+
+# ╔═╡ a16a6888-87b7-4c30-b254-4901630af21b
+kolom
+
+# ╔═╡ 5a7c92bf-a811-4cb8-8a37-9f2c4c4b1ad2
+md"""
+## Controle
+Aftoetsen van de interne krachten en vervormingen
+
+!!! warning "Controles"
+	Maak gebruik van *enumerate* `Check`met waarde *false* of *true*
+"""
 
 # ╔═╡ 695ecf3c-6a51-458d-b63f-8f323df46a8a
 md"""
@@ -129,6 +298,62 @@ FROM (
 ORDER BY
 	I ASC;	
 """) |> DataFrame
+
+# ╔═╡ 1eeb0c6d-523c-423f-897a-fe9aff327c3a
+eig = DBInterface.execute(db, """
+SELECT
+	*
+FROM
+	tubes
+WHERE
+	name == "$(kolom[:naam])"
+""") |> DataFrame |> first
+
+# ╔═╡ c6c90732-fe79-4e65-b456-9bd8ad95cb1b
+z_max = +(eig.b / 1000) / 2 # m - Halve hoogte, van neutrale lijn tot uiterste vezel
+
+# ╔═╡ 24374102-fcc8-42e6-b486-a8ba1ba71106
+z_min = -(eig.b / 1000) / 2 # m - Halve hoogte, van neutrale lijn tot uiterste vezel
+
+# ╔═╡ 2cfe82e5-fac6-49f6-b3b7-cdbf9549113d
+begin
+	rvw[!, :phi] 	.= ϕ
+	rvw[!, :I]		.= eig.I * 10^-6 # m⁴
+	rvw[!, :A]		.= eig.A * 10^-6 # m²
+	rvw[!, :EI]		.= eig.I * E * 10^-3 # kNm² 
+	md"Aanvullen randvoorwaarden"
+end
+
+# ╔═╡ 77a710cf-318a-4fdf-b642-f1ec3ddd0e7f
+function classificatie(σ; f_y=235)
+	# Berekening α
+	σ_pos, σ_neg = σ(z_max), σ(z_min)
+	sigma = LinearInterpolation(
+		sort([σ_pos, σ_neg]), [1, 0], extrapolation_bc=Line())
+	α = max(min(sigma(0), 1), 0) # Bepaal α, de locatie waar de spanning = 0
+	z_e = 1 - (σ_neg + 2 * σ_pos) / (σ_neg + σ_pos) * eig.b / 3 # zwaartepunt
+	# Bepalen classificatie
+	c = eig.b - 2 * (eig.t + eig.ri)
+	ε = sqrt(235 / f_y)
+	ψ = 1 - 1 / α
+	bounds = 
+		α > 0.5 ? 
+		[ # α > 0.5
+			0.0, 
+			396 * ε / (13 * α - 1), 	# Max waarde klasse 1 - plastisch
+			456 * ε / (13 * α - 1), 	# Max waarde klasse 2 - plastisch
+			42 * ε / ( 0.67 + 0.33 * ψ) # Max waarde klasse 3 - elastisch
+		] : 
+		[
+			0.0, 
+			36 * ε / α,					# Max waarde klasse 1 - plastisch
+			41.5 * ε / α,				# Max waarde klasse 2 - plastisch
+			62 * ε * (1 - ψ) * sqrt(-ψ)	# Max waarde klasse 3 - elastisch
+		]
+	# Interpoleer waardes
+	itp = LinearInterpolation(bounds, 1:4, extrapolation_bc=Line()) 
+	return itp(c/eig.t)
+end
 
 # ╔═╡ 7f3a6986-dfab-4e82-8eda-1a0bd72b47bd
 md"""
@@ -176,6 +401,41 @@ mutable struct UC
 	UC(beschrijving, waarde, limiet) = (uc = new(beschrijving, waarde, limiet); uc.check = Check(waarde / limiet <= 1); uc)
 end
 
+# ╔═╡ dc115304-6793-432f-b423-23a68beb6bd7
+function controle(r::NamedTuple)
+	checks = Array{Union{Missing, UC}}(missing, 4)
+	return checks
+end
+
+# ╔═╡ 1d483436-9f48-41f7-b5b3-c49fb81a6824
+md"""
+Opsplitsing in kolommen
+"""
+
+# ╔═╡ e8773634-2240-4870-aa5c-8460459178b8
+struct TwoColumn{L, R}
+	left::L
+	right::R
+end
+
+# ╔═╡ af04ceeb-5a97-4eee-bbd7-0aa324dc8704
+function Base.show(io::IO, mime::MIME"text/html", tc::TwoColumn)
+	Base.write(io, """
+		<div style="display: flex; align-items: center; justify-content: center;">
+			<div style="flex: 50%; overflow-x: scroll;">
+	""")
+	show(io, mime, tc.left)
+	Base.write(io, """
+			</div>
+			<div style="flex: 50%;">
+	""")
+	show(io, mime, tc.right)
+	Base.write(io, """
+			</div>
+		</div>
+	""")
+end
+
 # ╔═╡ efcf9a17-4b36-4c0d-88c4-e597b175e0eb
 function Base.show(io::IO, mime::MIME"text/html", uc::UC)
 	afronden = t -> (d -> round(d, digits=t))
@@ -194,12 +454,198 @@ function Base.show(io::IO, mime::MIME"text/html", uc::UC)
 	Base.write(io, """</div></div>""")
 end
 
+# ╔═╡ 5f7b25aa-2fd6-44c6-95a2-94232a444061
+md"""
+Zet een NamedTuple om naar een Dict waarbij de *keys* geevalueerd zijn als *variables*
+"""
+
+# ╔═╡ 02284a59-bbc5-404a-b63c-6b058e4a1ac2
+ToDict(r::NamedTuple) = Dict(keys(r) .|> eval .=> values(r))
+
+# ╔═╡ 1b159512-beba-4227-9da1-c8bf34ce8de3
+rnd(n) = round(n; digits=2)
+
+# ╔═╡ abe1fdf5-995e-4965-95f6-6d9ee3d22a96
+md"""
+## Schema 1. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vervorming*
+Door de *initiële vervorming* en *intitiële vooruitbuiging* worden er krachten opgewekt in de kolom. **Schema 1** begroot de interne krachtswerking onder een **initiële vervorming**. De hoekverdraaiing $\phi$ wordt vervangen door een **equivalente horizontale puntkracht** $\phi F$ die aangrijpt bovenaan de ligger.
+"""
+
+# ╔═╡ fbcdc48e-b700-4efe-b375-2c561fd30fdf
+F, L, M_L, phi, A, EI, I, z, t = symbols(raw"F L M_L \phi A EI I z t", real=true)
+
+# ╔═╡ 76708068-72c9-4238-a138-89522b4b63b3
+@drawsvg begin
+	scaling = 40
+	init = Point.([(0, 0), (0, -500)])
+	final = Point.([(0, 0), ((scaling * ϕ) * 500, -500)])
+	fontsize(20)
+	Luxor.translate(0, 300)
+	Luxor.label("phi F", :NW, final[2])
+	Luxor.arrow(init[2] + (10, 0), final[2] - (10, 0))
+	@layer ( # Originele vorm
+		setdash("dash"),
+		circle.(init, 4, :fill),
+		poly(init, :stroke)
+	)
+	@layer ( # Nieuwe geometrie
+		circle.(final, 4, :fill),
+		move(final[1]),
+		curve(final[1] - (0, 150), final[2] + (0, 150), final[2]),
+		poly(first(pathtopoly()), :stroke)
+	)
+	@layer (
+		Luxor.label("F", :E, init[2] - (0, 60)),
+		Luxor.arrow(init[2] - (0, 60), init[2] - (0, 10))	
+	)
+end 800 800
+
+# ╔═╡ befe0b07-ebde-4c43-b088-fdcfcdc237ce
+R1H = phi * F
+
+# ╔═╡ 12b86cfe-8b4e-4b9e-a12a-c8b1dbe17038
+R1V = F
+
+# ╔═╡ beca8144-d7fc-45cd-8119-6f413a9c3708
+R1M = phi * F * L - M_L
+
+# ╔═╡ 2d190e38-12d1-44f8-88d4-bf105282a5a0
+md"""
+### Bepalen $N(t)$, $V(t)$ en $M(t)$
+Bepalen van de interne krachtswerking
+"""
+
+# ╔═╡ 9197de8e-4b8b-426a-a1f7-5755de13046d
+N1 = F # Onafhankelijk van t
+
+# ╔═╡ e87466e2-4595-4b1f-ae53-871da933f208
+V1 = - R1H # Onafhankelijk van t
+
+# ╔═╡ 127bfc99-475c-44c8-a3b2-6e672d19e6f0
+M1_ = - R1M + R1H * t # Onbekende M_L = moment die kolom recht houdt centraal
+
+# ╔═╡ 7cdaf6ee-d669-4038-8d8d-391c336f5265
+md"""
+Spanning in de doorsnede
+"""
+
+# ╔═╡ be31b86e-309c-4f3d-8c50-e300df3e85b9
+md"""
+### Bepalen $\alpha(t)$ en $v(t)$
+Bepalen van de hoekverdraaiing $\alpha$ en de vervorming $v$
+"""
+
+# ╔═╡ 47091a29-a6f4-4fa3-86c7-73ee4f514e96
+C1, D1 = symbols("C D", real=true)
+
+# ╔═╡ 8dba5369-b5b0-4a0b-9c08-7db7d8754e9e
+α1_ = integrate(M1_, t) + C1
+
+# ╔═╡ 425bc939-5f25-46f0-b2dd-4bc923b1e3dd
+v1_ = integrate(α1_, t) + D1
+
+# ╔═╡ 308e442c-28da-4e21-b67a-13d7a52088a7
+md"""
+### Toepassen kinematische randvoorwaarde
+Opleggen van de hoekverdraaiing op $t=L$
+"""
+
+# ╔═╡ 35d4e904-1017-4c2d-b159-963034eb4e56
+rvw1 = [
+	v1_(t=>0),
+	α1_(t=>0),
+	α1_(t=>L)
+]
+
+# ╔═╡ 6b4f5532-c493-4afa-bcb2-769d9dc37200
+opl1 = solve(rvw1, [C1, D1, M_L])
+
+# ╔═╡ 47ee88d4-ff10-45a2-9905-27104410fd9a
+M1 = M1_(opl1...)
+
+# ╔═╡ 618014c3-ee47-465e-b63f-bbdb136c2217
+σ1 = M1 * z / I + N1 / A
+
+# ╔═╡ 78784064-422d-4888-940f-9b5c35e47aaa
+α1 = α1_(opl1...) / EI
+
+# ╔═╡ 7bc9eb16-a86c-469a-b881-f2eaadecbc79
+v1 = v1_(opl1...) / EI
+
+# ╔═╡ ba4505b4-c35b-4a25-a59e-88738d0aee05
+opl = select(
+	rvw,
+	:check,
+	AsTable(
+		DataFrames.Not(:check)
+	) => ByRow(
+		r -> [N1, V1, M1, α1, v1, σ1] .|> f -> lambdify(f(ToDict(r)...))
+	) => [:N, :V, :M, :α, :v, :σ]
+)
+
+# ╔═╡ a012e4d2-d7db-44f0-95ff-800512b66fe0
+@drawsvg begin
+	schaal = 5
+	fontsize(20)
+	pnts = Point.([(0, 150),(0, -150)])
+	σ_pos = first(opl.σ[opl.check .== Symbol(grenstoestand)])(tval, z_max) / 1000
+	σ_neg = first(opl.σ[opl.check .== Symbol(grenstoestand)])(tval, z_min) / 1000
+	pnt_pos = Point(schaal * σ_pos, -150)
+	pnt_neg = Point(schaal * σ_neg, 150)
+	s = poly([pnts..., pnt_pos, pnt_neg])
+	pos, neg = polysplit(s, pnts...)
+	lbl1, lbl2 = σ_pos < σ_neg ? ("σ_max", "σ_min") : ("σ_min", "σ_max") 
+	@layer (
+		sethue("red"),
+		setopacity(0.5),
+		poly(neg, :fill)
+	)
+	@layer (
+		sethue("green"),
+		setopacity(0.5),
+		poly(pos, :fill)
+	)
+	@layer (
+		sethue("black"),
+		Luxor.arrow(pnts[1], pnt_neg),
+		Luxor.label("$lbl1 = $(σ_pos |> rnd) MPa", :SE, pnt_neg),
+		Luxor.arrow(pnts[2], pnt_pos),
+		Luxor.label("$lbl2 = $(σ_neg |> rnd) MPa", :NE, pnt_pos)
+	)
+	@layer (
+		Luxor.scale(1, 1.2),
+		line(pnts..., :stroke)
+	)
+	Luxor.label("σ", :SE, pnts[1] + (0, 10), offset=15)
+end 800 400
+
+# ╔═╡ 0ec33b07-e4cb-470f-af63-86c2ad624f44
+klasse = select(
+	opl,
+	:check,
+	:σ => ByRow(σ -> 
+		[classificatie(z -> σ(t, z)) for t in 0:0.05:geom[:L]] |> maximum
+	) => :klasse
+)
+
+# ╔═╡ b976f9da-bfca-4d50-aa73-04f6eb1da4b7
+md"""
+De kolom **$(kolom[:beschrijving])** van het type **$(kolom[:naam])** in staalkwaliteit *$(kolom[:kwaliteit])* is van **klasse $(join(klasse.klasse .|> (Int ∘ floor), " en "))** in respectievelijk **$(join(klasse.check, " en "))**. 
+"""
+
+# ╔═╡ e666db94-c548-4cd7-8858-94277fc5c57d
+md"""
+## Schema 2. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vooruitbuiging*
+Door de *initiële vervorming* en *intitiële vooruitbuiging* worden er krachten opgewekt in de kolom. **Schema 2** begroot de interne krachtswerking onder een **initiële vooruitbuiging**. De hoekverdraaiing $\phi$ wordt vervangen door een **equivalente horizontale puntkracht** $\phi F$ die aangrijpt bovenaan de ligger.
+"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 ImageView = "86fae568-95e7-573e-a6b2-d8a6b900c9ef"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -212,6 +658,7 @@ Underscores = "d9a01c3f-67ce-4d8c-9b55-35f6e4050bb1"
 DataFrames = "~1.2.1"
 ImageView = "~0.10.13"
 Images = "~0.23.3"
+Interpolations = "~0.13.3"
 Luxor = "~2.14.0"
 Plots = "~1.15.2"
 PlutoUI = "~0.7.9"
@@ -1583,11 +2030,49 @@ version = "0.9.1+5"
 # ╟─2f321431-5f92-453c-bfb2-ce3c6f7f81a2
 # ╠═81d77b92-3499-451d-b485-b8378cdbf611
 # ╟─6f2b93c1-df30-427a-a0f8-1a3cbc0890bb
+# ╟─83113699-96e8-4cce-9101-37f016855b49
+# ╟─1eeb0c6d-523c-423f-897a-fe9aff327c3a
+# ╟─65052451-ac16-458e-911b-17226c5355d7
+# ╟─1e3f7495-7255-4319-8a0d-3c2a66305d06
+# ╟─0d602b85-8c97-47f6-bdcd-3a5738b94371
+# ╠═15c1009a-be15-4780-8054-d30271af920c
+# ╠═bf5de147-27f7-4b05-8038-b7d3fe545466
+# ╠═0de5f479-0eef-48bc-8146-757b4ff3b27d
+# ╠═c6c90732-fe79-4e65-b456-9bd8ad95cb1b
+# ╠═24374102-fcc8-42e6-b486-a8ba1ba71106
 # ╟─5fbb513b-35fc-43cc-b81b-cb52dd572584
 # ╟─6967230f-8e86-48d7-affb-8f537f50b053
 # ╟─650a4e73-0ff4-4ab2-be22-70143654aa57
 # ╟─1402febf-ba8c-475a-8f23-a916d8d9815b
-# ╠═39feffd5-63b2-4f6d-8ffc-21e55ce0f31e
+# ╟─39feffd5-63b2-4f6d-8ffc-21e55ce0f31e
+# ╟─0e483762-3725-418b-a67d-56c1815bc5ba
+# ╟─c3a0091f-31ee-46e2-bf21-94da754b6cac
+# ╟─92615040-32a4-400d-818f-5deaef931d66
+# ╟─a6c1043b-70d7-4b42-a883-96e168f80045
+# ╟─fe677e91-ab28-40e5-b270-163ac77a1dd1
+# ╟─977c58d5-3bdb-4f34-baee-c5f3acc83155
+# ╠═23304671-76f0-4d3f-957d-0f2ebbefe54e
+# ╟─32c60448-66f4-4d55-8282-abd76c7672a8
+# ╠═b5cb73da-c8e6-417f-94a8-0f0fa5ae8321
+# ╠═6bc279ad-c26b-46e8-a738-32c5b43e6f96
+# ╠═ab4ff3ac-6045-48b0-af4d-546a4af69ae7
+# ╟─b7b47867-f469-46d4-a7e7-0da9f59c4b8c
+# ╟─5fc42b0d-0363-4087-acfe-962f3304fccf
+# ╠═3d0a7e42-8915-41b6-961c-ae45921b53e8
+# ╟─1c0069be-e284-46f3-8ebf-808029b0e8ce
+# ╠═2cfe82e5-fac6-49f6-b3b7-cdbf9549113d
+# ╟─ba4505b4-c35b-4a25-a59e-88738d0aee05
+# ╟─79deccb1-5aab-4bfd-857f-55b17250527c
+# ╟─49f763be-0741-4895-adcb-22efd0ad58e5
+# ╟─a012e4d2-d7db-44f0-95ff-800512b66fe0
+# ╟─565c0a79-02ab-4f09-838b-a8d5be5b328e
+# ╟─da0eddc9-788d-4308-b458-54db04cd0fd2
+# ╠═77a710cf-318a-4fdf-b642-f1ec3ddd0e7f
+# ╟─0ec33b07-e4cb-470f-af63-86c2ad624f44
+# ╟─b976f9da-bfca-4d50-aa73-04f6eb1da4b7
+# ╠═a16a6888-87b7-4c30-b254-4901630af21b
+# ╟─5a7c92bf-a811-4cb8-8a37-9f2c4c4b1ad2
+# ╠═dc115304-6793-432f-b423-23a68beb6bd7
 # ╟─695ecf3c-6a51-458d-b63f-8f323df46a8a
 # ╟─1e5bd62b-5327-4abb-b4c0-9df3c2a92be9
 # ╠═e8bc8487-8e7e-4e5f-a06e-193669f4cce9
@@ -1602,5 +2087,34 @@ version = "0.9.1+5"
 # ╟─47f629ad-75cd-4400-a07e-ddd22c4f94e8
 # ╠═d3b4ab06-11e2-4fd3-b994-60c6aabf5308
 # ╠═efcf9a17-4b36-4c0d-88c4-e597b175e0eb
+# ╟─1d483436-9f48-41f7-b5b3-c49fb81a6824
+# ╠═e8773634-2240-4870-aa5c-8460459178b8
+# ╠═af04ceeb-5a97-4eee-bbd7-0aa324dc8704
+# ╟─5f7b25aa-2fd6-44c6-95a2-94232a444061
+# ╠═02284a59-bbc5-404a-b63c-6b058e4a1ac2
+# ╠═1b159512-beba-4227-9da1-c8bf34ce8de3
+# ╟─abe1fdf5-995e-4965-95f6-6d9ee3d22a96
+# ╟─fbcdc48e-b700-4efe-b375-2c561fd30fdf
+# ╟─76708068-72c9-4238-a138-89522b4b63b3
+# ╟─befe0b07-ebde-4c43-b088-fdcfcdc237ce
+# ╟─12b86cfe-8b4e-4b9e-a12a-c8b1dbe17038
+# ╟─beca8144-d7fc-45cd-8119-6f413a9c3708
+# ╟─2d190e38-12d1-44f8-88d4-bf105282a5a0
+# ╠═9197de8e-4b8b-426a-a1f7-5755de13046d
+# ╠═e87466e2-4595-4b1f-ae53-871da933f208
+# ╠═127bfc99-475c-44c8-a3b2-6e672d19e6f0
+# ╟─47ee88d4-ff10-45a2-9905-27104410fd9a
+# ╟─7cdaf6ee-d669-4038-8d8d-391c336f5265
+# ╠═618014c3-ee47-465e-b63f-bbdb136c2217
+# ╟─be31b86e-309c-4f3d-8c50-e300df3e85b9
+# ╟─47091a29-a6f4-4fa3-86c7-73ee4f514e96
+# ╠═8dba5369-b5b0-4a0b-9c08-7db7d8754e9e
+# ╟─78784064-422d-4888-940f-9b5c35e47aaa
+# ╠═425bc939-5f25-46f0-b2dd-4bc923b1e3dd
+# ╟─7bc9eb16-a86c-469a-b881-f2eaadecbc79
+# ╟─308e442c-28da-4e21-b67a-13d7a52088a7
+# ╠═35d4e904-1017-4c2d-b159-963034eb4e56
+# ╟─6b4f5532-c493-4afa-bcb2-769d9dc37200
+# ╠═e666db94-c548-4cd7-8858-94277fc5c57d
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
