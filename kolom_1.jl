@@ -34,8 +34,11 @@ Controles in **GGT**
 1. 
 
 Controles in **UGT**
-2. 
+2. **Elastische toetsing** aan de hand van het vloeicriterium van *Maxwell–Huber–Hencky–von Mises*, met $\sigma_{x,Ed}$ de spanning in de lengterichting, $\sigma_{z,Ed}$ de spanning in de dwarsrichting en $\tau_{Ed}$ de schuifspanning in een punt, maar **controle op basis van weerstanden** en interactie tussen $N_{Rd}$, $V_{Rd}$ en $M_{Rd}$ geniet voorkeur.
+$$\left(\dfrac{\sigma_{x,Ed}}{f_y/\gamma_{M0}}\right)^2 + \left(\dfrac{\sigma_{z,Ed}}{f_y/\gamma_{M0}}\right)^2 - \left(\dfrac{\sigma_{x,Ed}}{f_y/\gamma_{M0}}\right)\left(\dfrac{\sigma_{z,Ed}}{f_y/\gamma_{M0}}\right) + 3 \left(\dfrac{\tau_{Ed}}{f_y/\gamma_{M0}}\right) \leq 1$$
 
+3. **Conservatieve benadering** door het **lineair optellen** verhouding rekenwaarden belastingseffecten en hun weerstand kan ook. 
+$$\dfrac{N_{Ed}}{N_{Rd}} + \dfrac{M_{y,Ed}}{M_{y,Rd}} + \dfrac{M_{z,Ed}}{M_{z,Rd}} <= 1$$
 
 """
 
@@ -80,11 +83,7 @@ Nominale waarde volgen *NBN EN 1993-1-1 §3.2*
 """
 
 # ╔═╡ 1e3f7495-7255-4319-8a0d-3c2a66305d06
-f_yd = begin 
-	f_yk = parse(Int64, kolom[:kwaliteit][2:end]) # MPa = N/mm² - Representatieve waarde
-	γ_M0 = 1.0 # Materiaalfactor op constructiestaal
-	f_yk / γ_M0 # MPa = N/mm² - Rekenwaarden 
-end
+f_yk = parse(Int64, kolom[:kwaliteit][2:end])
 
 # ╔═╡ 0d602b85-8c97-47f6-bdcd-3a5738b94371
 md"""
@@ -165,7 +164,7 @@ Gemetrische imperfectie volgen *NBN EN 1993-1-1 §5.3.2* is afhankelijk van de k
 """
 
 # ╔═╡ a6c1043b-70d7-4b42-a883-96e168f80045
-load("./assets/img/NBN EN 1993-1-1 fig 5.4.png")
+figuur5_4 = load("./assets/img/NBN EN 1993-1-1 fig 5.4.png")
 
 # ╔═╡ fe677e91-ab28-40e5-b270-163ac77a1dd1
 md"""
@@ -209,7 +208,13 @@ tabel5_1 = DataFrame(
 )
 
 # ╔═╡ 3d0a7e42-8915-41b6-961c-ae45921b53e8
-e_0 = tabel5_1.elastisch[tabel5_1.knikkromme .== kolom[:knikkromme]] |> first
+e₀ = tabel5_1.elastisch[tabel5_1.knikkromme .== kolom[:knikkromme]] |> first # e_0
+
+# ╔═╡ db32e45a-ce7c-43b0-977c-c89b62db3b54
+md"""
+### Belastingschema
+Samenstel van de belastingseffecten van enerzijdes de **initiële vervorming** en anderzijds de **intiële vooruitbuiging**
+"""
 
 # ╔═╡ 1c0069be-e284-46f3-8ebf-808029b0e8ce
 md"""
@@ -257,6 +262,57 @@ Aftoetsen van de interne krachten en vervormingen
 
 !!! warning "Controles"
 	Maak gebruik van *enumerate* `Check`met waarde *false* of *true*
+"""
+
+# ╔═╡ 5ebe01be-f116-496e-8fd5-a687fc2dacd4
+γ_M0, γ_M1, γ_M2 = 1.00, 1.00, 1.25
+
+# ╔═╡ d1163bac-8c98-4aa9-bb79-b2f09e46392f
+md"""
+### Uiterste grenstoestanden `:UGT`
+Selecteer de abscis $t$ = $(@bind t_ Slider(0:0.05:geom[:L], show_value=true))
+"""
+
+# ╔═╡ 3097f9ac-fedd-49f6-853d-ef6b5eee2826
+md"""
+#### Doorsnede controle
+"""
+
+# ╔═╡ ca3f41bd-9491-46c7-bd6b-b078d01509ec
+md"""
+##### Axiale druk
+Berekening volgens *NBN EN 1993-1-1 §6.2.4*
+"""
+
+# ╔═╡ a511719f-e67c-4e7f-8c02-06a1c4d67a8f
+md"""
+##### Buigend moment
+Berekening volgens *NBN EN 1993-1-1 §6.2.5* mits in acht name van factor $\rho$ voor combinatie met *Dwarskracht* volgens *NBN EN 1993-1-1 §6.2.8*
+"""
+
+# ╔═╡ add548a9-0dd1-4041-9949-fc5a3181e973
+md"""
+Reductie $M_{Rd}$ bij aanwezigheid van een normaalkracht 
+!!! danger "Toepasbaarheid"
+	Onderstaande uiteenzetting geldt enkel voor profielen van **klasse 1 en 2**, zie *NBN EN 1993-1-1 §6.2.9.2-3* voor doorsneden van klasse 3 en 4. Ook is in onderstaande uitgegaan van één-assige buiging voor een kolom SHS (dus **stijfheid** in de **twee richting gelijk**)
+"""
+
+# ╔═╡ 264294d2-a757-4ce3-90d5-05960151fe6c
+md"""
+##### Dwarskracht (afschuiving)
+Berekening volgens *NBN EN 1993-1-1 §6.2.6*
+!!! danger "Toepasbaarheid"
+	Onderstaande formule is enkel van toepassing voor **klasse 1 en 2**, voor de elastiche berekeningsmethode voor $V_{c,Rd}$ wordt voor het **kritiek punt** in de doorsnede de onderstaande vergelijking getest met $S$ het statisch moment rond het beschouwde punt en $t$ de dikte ervan.
+
+	$$\dfrac{\tau_{Ed}}{f_y / \left(\sqrt(3)\gamma_{M0}\right)}\leq 1.0\text{  met  } \tau_{Ed} = \dfrac{V_{Ed}\ S}{I\ t}$$
+"""
+
+# ╔═╡ 5c064cef-b7c2-4fb6-9013-8afa0f11206c
+md"""
+##### Wringing (torsie)
+Berekening volgens *NBN EN 1993-1-1 §6.2.7*
+!!! info "Geen wringing"
+	Geen wringing (torsie) grijpt aan. De eenheidscontrole (`UC`) voldoet
 """
 
 # ╔═╡ 695ecf3c-6a51-458d-b63f-8f323df46a8a
@@ -316,12 +372,14 @@ z_max = +(eig.b / 1000) / 2 # m - Halve hoogte, van neutrale lijn tot uiterste v
 z_min = -(eig.b / 1000) / 2 # m - Halve hoogte, van neutrale lijn tot uiterste vezel
 
 # ╔═╡ 2cfe82e5-fac6-49f6-b3b7-cdbf9549113d
-begin
-	rvw[!, :phi] 	.= ϕ
-	rvw[!, :I]		.= eig.I * 10^-6 # m⁴
-	rvw[!, :A]		.= eig.A * 10^-6 # m²
-	rvw[!, :EI]		.= eig.I * E * 10^-3 # kNm² 
-	md"Aanvullen randvoorwaarden"
+rvw_compleet = begin
+	rvw_compleet = copy(rvw)
+	rvw_compleet[!, :phi] 	.= ϕ
+	rvw_compleet[!, :e_0] 	.= e₀
+	rvw_compleet[!, :I]		.= eig.I * 10^-6 # m⁴
+	rvw_compleet[!, :A]		.= eig.A * 10^-6 # m²
+	rvw_compleet[!, :EI]	.= eig.I * E * 10^-3 # kNm²
+	rvw_compleet
 end
 
 # ╔═╡ 77a710cf-318a-4fdf-b642-f1ec3ddd0e7f
@@ -354,6 +412,18 @@ function classificatie(σ; f_y=235)
 	itp = LinearInterpolation(bounds, 1:4, extrapolation_bc=Line()) 
 	return itp(c/eig.t)
 end
+
+# ╔═╡ 407a9aa2-3ac7-4f35-8b55-76a4ab1dcb62
+N_cRd = eig.A * f_yk / γ_M0 / 1000 # kN
+
+# ╔═╡ 338e1993-92cc-4a22-bed5-c2a027a4a46e
+a_w = min((eig.A - 2 * eig.b * eig.t) / eig.A, 0.5) # Gewalst buisprofiel
+
+# ╔═╡ 2e69fe82-5a8b-406b-95f9-eb7c82418733
+a_f = min((eig.A - 2 * eig.b * eig.t) / eig.A, 0.5) # Gewalst buisprofiel h=b
+
+# ╔═╡ 1a356a52-086f-46c6-a828-ac75d1b912c6
+V_plRd = eig.Av * f_yk / γ_M0 / 1000 # kN
 
 # ╔═╡ 7f3a6986-dfab-4e82-8eda-1a0bd72b47bd
 md"""
@@ -405,6 +475,37 @@ end
 function controle(r::NamedTuple)
 	checks = Array{Union{Missing, UC}}(missing, 4)
 	return checks
+end
+
+# ╔═╡ a835b337-5d25-47c2-a34c-b74beb4b62de
+md"""
+Algemene functies om somaties van `Markdown.MD` types mogelijk te maken, alsook de sommatie van de *custom* `UC` *struct*
+"""
+
+# ╔═╡ 2d88f595-d4ae-427f-ac24-5fcef37dafb6
+function Base.:+(uc1::UC, uc2::UC)
+	c1, c2 = getproperty.([uc1, uc2], :beschrijving)
+	w1, w2 = getproperty.([uc1, uc2], :waarde)
+	l1, l2 = getproperty.([uc1, uc2], :limiet)
+	return UC(c1 + c2, w1 * l2 + w2 * l1, l1 * l2)
+end
+
+# ╔═╡ 4186bf7c-dada-447e-8e1c-7c5a695111a6
+function Base.:+(md1::Markdown.MD, md2::Markdown.MD)
+	pgs1, pgs2 = md1.content, md2.content
+	if length(pgs1) == 1 && length(pgs2) == 1
+		pg1, pg2 = (pgs1, pgs2) .|> first
+		tp1, tp2 = (pg1, pg2) .|> typeof
+		if all((tp1, tp2) .== Markdown.LaTeX)
+			c1, c2 = getproperty.([pg1, pg2], :formula)
+			return Markdown.MD(Markdown.LaTeX(string(c1,"+",c2)))
+		elseif all((tp1, tp2) .== Markdown.Paragraph)
+			c1, c2 = getproperty.([pg1, pg2], :content) .|> first
+			return Markdown.MD(Markdown.Paragraph(string(c1," ",c2)))
+		else
+			return Markdown.MD(Markdown.Paragraph("..."))
+		end
+	end
 end
 
 # ╔═╡ 1d483436-9f48-41f7-b5b3-c49fb81a6824
@@ -465,14 +566,26 @@ ToDict(r::NamedTuple) = Dict(keys(r) .|> eval .=> values(r))
 # ╔═╡ 1b159512-beba-4227-9da1-c8bf34ce8de3
 rnd(n) = round(n; digits=2)
 
+# ╔═╡ 31935523-75d7-4f62-b27a-fc37edd2eec4
+md"""
+## Belastingsschema's
+De belastingsschema's worden in het algemeen uitgewerkt en het **superpositie beginstel** wordt gehanteerd om de verschillende belastingseffecten samen te stellen
+"""
+
+# ╔═╡ 45c714f3-327c-4319-834f-f94bce39aa80
+figuur5_4
+
 # ╔═╡ abe1fdf5-995e-4965-95f6-6d9ee3d22a96
 md"""
-## Schema 1. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vervorming*
+### Schema 1. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vervorming*
 Door de *initiële vervorming* en *intitiële vooruitbuiging* worden er krachten opgewekt in de kolom. **Schema 1** begroot de interne krachtswerking onder een **initiële vervorming**. De hoekverdraaiing $\phi$ wordt vervangen door een **equivalente horizontale puntkracht** $\phi F$ die aangrijpt bovenaan de ligger.
 """
 
 # ╔═╡ fbcdc48e-b700-4efe-b375-2c561fd30fdf
 F, L, M_L, phi, A, EI, I, z, t = symbols(raw"F L M_L \phi A EI I z t", real=true)
+
+# ╔═╡ aefe6d2f-5b87-4196-bdc8-1ab433fdd0f0
+N = F
 
 # ╔═╡ 76708068-72c9-4238-a138-89522b4b63b3
 @drawsvg begin
@@ -511,7 +624,7 @@ R1M = phi * F * L - M_L
 
 # ╔═╡ 2d190e38-12d1-44f8-88d4-bf105282a5a0
 md"""
-### Bepalen $N(t)$, $V(t)$ en $M(t)$
+#### Bepalen $N(t)$, $V(t)$ en $M(t)$
 Bepalen van de interne krachtswerking
 """
 
@@ -531,7 +644,7 @@ Spanning in de doorsnede
 
 # ╔═╡ be31b86e-309c-4f3d-8c50-e300df3e85b9
 md"""
-### Bepalen $\alpha(t)$ en $v(t)$
+#### Bepalen $\alpha(t)$ en $v(t)$
 Bepalen van de hoekverdraaiing $\alpha$ en de vervorming $v$
 """
 
@@ -546,7 +659,7 @@ v1_ = integrate(α1_, t) + D1
 
 # ╔═╡ 308e442c-28da-4e21-b67a-13d7a52088a7
 md"""
-### Toepassen kinematische randvoorwaarde
+#### Toepassen kinematische randvoorwaarde
 Opleggen van de hoekverdraaiing op $t=L$
 """
 
@@ -572,14 +685,111 @@ M1 = M1_(opl1...)
 # ╔═╡ 7bc9eb16-a86c-469a-b881-f2eaadecbc79
 v1 = v1_(opl1...) / EI
 
+# ╔═╡ e666db94-c548-4cd7-8858-94277fc5c57d
+md"""
+### Schema 2. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vooruitbuiging*
+Door de *initiële vervorming* en *intitiële vooruitbuiging* worden er krachten opgewekt in de kolom. **Schema 2** begroot de interne krachtswerking onder een **initiële vooruitbuiging**. De hoekverdraaiing $\phi$ wordt vervangen door een **equivalente horizontale lijnbelasting** $p$ met een grootte $8 F e_0 / L^2$ die aangrijpt over de gehele kolom. Onderaan en bovenaan worden compenserende krachten voorzien.
+"""
+
+# ╔═╡ de06b955-cb23-410b-a1c8-07fb7271488b
+e_0 = symbols("e_0", real=true)
+
+# ╔═╡ 86abd745-f01b-4b2b-99a0-71eeb992f8a1
+R2H = 8 * F * e_0 / L^2 * L - 4 * F * e_0 / L # Onafhankelijk van t
+
+# ╔═╡ e6d935a0-bf22-4394-a8c1-e782a9d22d0d
+R2V = F # Onafhankelijk van t
+
+# ╔═╡ 3c5011f6-9f59-47b6-a0b5-2c3946f06d53
+R2M = 8 * F * e_0 / L^2 * L / 2 - M_L  # Afhankelijk van t
+
+# ╔═╡ 6464d3bc-940e-49e1-99f5-c8073658658b
+md"""
+#### Bepalen $N(t)$, $V(t)$ en $M(t)$
+Bepalen van de interne krachtswerking
+"""
+
+# ╔═╡ b5c615b0-babb-4a9f-8da6-993c09c484de
+N2 = F # Onafhankelijk van t
+
+# ╔═╡ 7c3df4d2-ef0d-4e32-822d-7d1c1b6cc650
+V2 = - R2H + 8 * F * e_0 / L^2 * t # Afhankelijk van t
+
+# ╔═╡ 6953ea5f-bbd1-4453-896e-ea825259a71a
+V = V1 + V2
+
+# ╔═╡ 51e153cd-77a5-4f59-91d7-d52a0e5f1555
+M2_ = - R2M + R2H * t - 8 * F * e_0 / L^2 * t * t/2 # Afhankelijk van t
+
+# ╔═╡ 6657e0c5-84e7-4721-951e-012df437c224
+md"""
+Spanning in de doorsnede
+"""
+
+# ╔═╡ d581d33f-5702-49d2-bac1-367bbb68fd78
+md"""
+#### Bepalen $\alpha(t)$ en $v(t)$
+Bepalen van de hoekverdraaiing $\alpha$ en de vervorming $v$
+"""
+
+# ╔═╡ 45890c99-6860-4535-a50b-a0ec7a97ed7a
+C2, D2 = symbols("C D", real=true)
+
+# ╔═╡ 6e4d3a43-2531-4a04-a906-8670a2f2d768
+α2_ = integrate(M2_, t) + C2
+
+# ╔═╡ 7b75208f-e8e6-4653-9f22-a58148a20962
+v2_ = integrate(α2_, t) + D2
+
+# ╔═╡ 0be8effe-aa43-41ce-b5d0-36b2695a0bf8
+md"""
+#### Toepassen kinematische randvoorwaarde
+Opleggen van de hoekverdraaiing op $t=L$
+"""
+
+# ╔═╡ d706f10b-ca96-487c-bc51-328ad4f1b6d7
+rvw2 = [
+	v2_(t => 0),
+	α2_(t => 0),	# Geef hoekverdraaiing op t = 0
+	α2_(t => L)		# Geef hoekverdraaiing op t = 0
+]
+
+# ╔═╡ 20273e50-d109-4576-b569-1bb8f5c401a2
+opl2 = solve(rvw2, [C2, D2, M_L])
+
+# ╔═╡ 654e8c85-205b-4e02-973a-096cd6874fcd
+M2 = M2_(opl2...)
+
+# ╔═╡ 9c703711-b54f-422d-a32e-80ab672996b8
+M = M1 + M2
+
+# ╔═╡ c6c80f4a-ac86-4795-b155-74dceb127084
+σ = M * z / I + N / A
+
+# ╔═╡ 04000cb7-943e-46d6-83f6-076790673932
+σ2 = M2 * z / I + N2 / A
+
+# ╔═╡ 814f040d-40f2-408a-b95a-774d6c2a54e2
+α2 = α2_(opl2...) / EI
+
+# ╔═╡ decd09d9-4960-4802-b53c-fcff982b0bf7
+α = α1 + α2
+
+# ╔═╡ 5b833881-d5b2-414e-87f0-ef6d48f416fc
+v2 = α2_(opl2...) / EI
+
+# ╔═╡ fdf02502-9c6b-4a27-a6af-271f2fdb58f1
+v = v1 + v2
+
 # ╔═╡ ba4505b4-c35b-4a25-a59e-88738d0aee05
 opl = select(
-	rvw,
+	rvw_compleet,
 	:check,
 	AsTable(
 		DataFrames.Not(:check)
 	) => ByRow(
-		r -> [N1, V1, M1, α1, v1, σ1] .|> f -> lambdify(f(ToDict(r)...))
+		r -> [N, V, M, α, v, σ] .|> 
+		f -> lambdify(f(Dict(keys(r) .|> eval .=> values(r))...))
 	) => [:N, :V, :M, :α, :v, :σ]
 )
 
@@ -608,9 +818,9 @@ opl = select(
 	@layer (
 		sethue("black"),
 		Luxor.arrow(pnts[1], pnt_neg),
-		Luxor.label("$lbl1 = $(σ_pos |> rnd) MPa", :SE, pnt_neg),
+		Luxor.label("$lbl1 = $(σ_pos |> rnd) MPa", :NE, pnt_pos),
 		Luxor.arrow(pnts[2], pnt_pos),
-		Luxor.label("$lbl2 = $(σ_neg |> rnd) MPa", :NE, pnt_pos)
+		Luxor.label("$lbl2 = $(σ_neg |> rnd) MPa", :SE, pnt_neg)
 	)
 	@layer (
 		Luxor.scale(1, 1.2),
@@ -633,11 +843,53 @@ md"""
 De kolom **$(kolom[:beschrijving])** van het type **$(kolom[:naam])** in staalkwaliteit *$(kolom[:kwaliteit])* is van **klasse $(join(klasse.klasse .|> (Int ∘ floor), " en "))** in respectievelijk **$(join(klasse.check, " en "))**. 
 """
 
-# ╔═╡ e666db94-c548-4cd7-8858-94277fc5c57d
-md"""
-## Schema 2. Ingeklemde kolom die bovenaan *vast* gehouden wordt - *Initiële vooruitbuiging*
-Door de *initiële vervorming* en *intitiële vooruitbuiging* worden er krachten opgewekt in de kolom. **Schema 2** begroot de interne krachtswerking onder een **initiële vooruitbuiging**. De hoekverdraaiing $\phi$ wordt vervangen door een **equivalente horizontale puntkracht** $\phi F$ die aangrijpt bovenaan de ligger.
-"""
+# ╔═╡ 8626a190-bf29-454c-94f2-09924de6429d
+UGT = opl[opl.check .== :UGT, [:N, :V, :M]] |> first
+
+# ╔═╡ fee38bf5-df08-4f53-b8e3-b340ddb105b1
+N_Ed = UGT.N() # kN
+
+# ╔═╡ 9d370e4a-5ef2-44b1-86ea-89a8ce972eaa
+UC_N = UC(md"$\dfrac{N_{Ed}}{N_{c,Rd}}$", N_Ed, N_cRd)
+
+# ╔═╡ 0c044b93-5cd4-4ef9-a8e4-df729d7b8f87
+n = N_Ed / N_cRd
+
+# ╔═╡ 81060926-426e-4155-9c27-e833902d29bb
+M_Ed = abs(UGT.M(t_)) # kNm
+
+# ╔═╡ 5456715c-bf21-40c9-b955-d300988fa569
+V_Ed = abs(UGT.V(t_)) # kN
+
+# ╔═╡ b2e9dbbf-9bee-4907-895c-aa9f886aba46
+UC_V = UC(md"$\dfrac{V_{Ed}}{V_{c,Rd}}$", V_Ed, V_plRd)
+
+# ╔═╡ 453c07c4-5392-470a-a573-fe062e0cd8ff
+ρ = V_Ed / V_plRd < 0.5 ? 0 : ((2 * V_Ed) / V_plRd - 1)^2
+
+# ╔═╡ 51f51bda-c22a-48c6-9d4b-555a24cf8475
+M_cRd = eig.Wpl * 10^3 * (1 - ρ) * f_yk / γ_M0 / 10^6 # kNm
+
+# ╔═╡ cfd18de2-082d-414d-891e-131f2d0fe9d2
+M_NyRd = min(M_cRd * (1 - n) / (1 - 0.5 * a_w), M_cRd) # kNm - y-richting
+
+# ╔═╡ c8a9b302-34ff-4a1e-9dc3-dd98485c1bd2
+M_NzRd = min(M_cRd * (1 - n) / (1 - 0.5 * a_f), M_cRd) # kNm - z-richting
+
+# ╔═╡ f7b3e85f-f637-408a-a271-a314e6865960
+M_NRd = min(M_NyRd, M_NzRd) # Weerstand in de zwakke richting
+
+# ╔═╡ f7b2f221-e492-4931-a5c3-65b5b31e51f3
+UC_M = UC(md"$\dfrac{M_{Ed}}{M_{N,Rd}}$", M_Ed, M_NRd)
+
+# ╔═╡ eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
+UC_N + UC_M + UC_V
+
+# ╔═╡ 0f172efb-5844-4195-8c5b-766eaaa05b13
+[(opl.N.(t), opl.V.(t), opl.M.(t)) for t in 0:0.05:geom[:L]]
+
+# ╔═╡ b826e58a-1dc4-450d-838c-2ff31b9efc38
+test = [(n(), v(t), m(t)) for (n, v, m) in zip(opl.N, opl.V, opl.M), t in 0:0.05:geom[:L]]
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2033,7 +2285,7 @@ version = "0.9.1+5"
 # ╟─83113699-96e8-4cce-9101-37f016855b49
 # ╟─1eeb0c6d-523c-423f-897a-fe9aff327c3a
 # ╟─65052451-ac16-458e-911b-17226c5355d7
-# ╟─1e3f7495-7255-4319-8a0d-3c2a66305d06
+# ╠═1e3f7495-7255-4319-8a0d-3c2a66305d06
 # ╟─0d602b85-8c97-47f6-bdcd-3a5738b94371
 # ╠═15c1009a-be15-4780-8054-d30271af920c
 # ╠═bf5de147-27f7-4b05-8038-b7d3fe545466
@@ -2059,12 +2311,19 @@ version = "0.9.1+5"
 # ╟─b7b47867-f469-46d4-a7e7-0da9f59c4b8c
 # ╟─5fc42b0d-0363-4087-acfe-962f3304fccf
 # ╠═3d0a7e42-8915-41b6-961c-ae45921b53e8
+# ╟─db32e45a-ce7c-43b0-977c-c89b62db3b54
+# ╠═aefe6d2f-5b87-4196-bdc8-1ab433fdd0f0
+# ╠═6953ea5f-bbd1-4453-896e-ea825259a71a
+# ╠═9c703711-b54f-422d-a32e-80ab672996b8
+# ╠═decd09d9-4960-4802-b53c-fcff982b0bf7
+# ╠═fdf02502-9c6b-4a27-a6af-271f2fdb58f1
+# ╠═c6c80f4a-ac86-4795-b155-74dceb127084
 # ╟─1c0069be-e284-46f3-8ebf-808029b0e8ce
 # ╠═2cfe82e5-fac6-49f6-b3b7-cdbf9549113d
 # ╟─ba4505b4-c35b-4a25-a59e-88738d0aee05
 # ╟─79deccb1-5aab-4bfd-857f-55b17250527c
 # ╟─49f763be-0741-4895-adcb-22efd0ad58e5
-# ╟─a012e4d2-d7db-44f0-95ff-800512b66fe0
+# ╠═a012e4d2-d7db-44f0-95ff-800512b66fe0
 # ╟─565c0a79-02ab-4f09-838b-a8d5be5b328e
 # ╟─da0eddc9-788d-4308-b458-54db04cd0fd2
 # ╠═77a710cf-318a-4fdf-b642-f1ec3ddd0e7f
@@ -2072,6 +2331,34 @@ version = "0.9.1+5"
 # ╟─b976f9da-bfca-4d50-aa73-04f6eb1da4b7
 # ╠═a16a6888-87b7-4c30-b254-4901630af21b
 # ╟─5a7c92bf-a811-4cb8-8a37-9f2c4c4b1ad2
+# ╠═5ebe01be-f116-496e-8fd5-a687fc2dacd4
+# ╟─d1163bac-8c98-4aa9-bb79-b2f09e46392f
+# ╟─3097f9ac-fedd-49f6-853d-ef6b5eee2826
+# ╠═8626a190-bf29-454c-94f2-09924de6429d
+# ╟─ca3f41bd-9491-46c7-bd6b-b078d01509ec
+# ╠═fee38bf5-df08-4f53-b8e3-b340ddb105b1
+# ╠═407a9aa2-3ac7-4f35-8b55-76a4ab1dcb62
+# ╠═9d370e4a-5ef2-44b1-86ea-89a8ce972eaa
+# ╟─a511719f-e67c-4e7f-8c02-06a1c4d67a8f
+# ╠═81060926-426e-4155-9c27-e833902d29bb
+# ╠═51f51bda-c22a-48c6-9d4b-555a24cf8475
+# ╠═f7b2f221-e492-4931-a5c3-65b5b31e51f3
+# ╟─add548a9-0dd1-4041-9949-fc5a3181e973
+# ╠═cfd18de2-082d-414d-891e-131f2d0fe9d2
+# ╠═c8a9b302-34ff-4a1e-9dc3-dd98485c1bd2
+# ╠═f7b3e85f-f637-408a-a271-a314e6865960
+# ╠═338e1993-92cc-4a22-bed5-c2a027a4a46e
+# ╠═2e69fe82-5a8b-406b-95f9-eb7c82418733
+# ╠═0c044b93-5cd4-4ef9-a8e4-df729d7b8f87
+# ╟─264294d2-a757-4ce3-90d5-05960151fe6c
+# ╠═5456715c-bf21-40c9-b955-d300988fa569
+# ╠═1a356a52-086f-46c6-a828-ac75d1b912c6
+# ╠═b2e9dbbf-9bee-4907-895c-aa9f886aba46
+# ╠═453c07c4-5392-470a-a573-fe062e0cd8ff
+# ╟─5c064cef-b7c2-4fb6-9013-8afa0f11206c
+# ╠═eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
+# ╠═0f172efb-5844-4195-8c5b-766eaaa05b13
+# ╠═b826e58a-1dc4-450d-838c-2ff31b9efc38
 # ╠═dc115304-6793-432f-b423-23a68beb6bd7
 # ╟─695ecf3c-6a51-458d-b63f-8f323df46a8a
 # ╟─1e5bd62b-5327-4abb-b4c0-9df3c2a92be9
@@ -2087,14 +2374,19 @@ version = "0.9.1+5"
 # ╟─47f629ad-75cd-4400-a07e-ddd22c4f94e8
 # ╠═d3b4ab06-11e2-4fd3-b994-60c6aabf5308
 # ╠═efcf9a17-4b36-4c0d-88c4-e597b175e0eb
+# ╟─a835b337-5d25-47c2-a34c-b74beb4b62de
+# ╠═2d88f595-d4ae-427f-ac24-5fcef37dafb6
+# ╠═4186bf7c-dada-447e-8e1c-7c5a695111a6
 # ╟─1d483436-9f48-41f7-b5b3-c49fb81a6824
 # ╠═e8773634-2240-4870-aa5c-8460459178b8
 # ╠═af04ceeb-5a97-4eee-bbd7-0aa324dc8704
 # ╟─5f7b25aa-2fd6-44c6-95a2-94232a444061
 # ╠═02284a59-bbc5-404a-b63c-6b058e4a1ac2
 # ╠═1b159512-beba-4227-9da1-c8bf34ce8de3
+# ╟─31935523-75d7-4f62-b27a-fc37edd2eec4
+# ╠═45c714f3-327c-4319-834f-f94bce39aa80
 # ╟─abe1fdf5-995e-4965-95f6-6d9ee3d22a96
-# ╟─fbcdc48e-b700-4efe-b375-2c561fd30fdf
+# ╠═fbcdc48e-b700-4efe-b375-2c561fd30fdf
 # ╟─76708068-72c9-4238-a138-89522b4b63b3
 # ╟─befe0b07-ebde-4c43-b088-fdcfcdc237ce
 # ╟─12b86cfe-8b4e-4b9e-a12a-c8b1dbe17038
@@ -2115,6 +2407,26 @@ version = "0.9.1+5"
 # ╟─308e442c-28da-4e21-b67a-13d7a52088a7
 # ╠═35d4e904-1017-4c2d-b159-963034eb4e56
 # ╟─6b4f5532-c493-4afa-bcb2-769d9dc37200
-# ╠═e666db94-c548-4cd7-8858-94277fc5c57d
+# ╟─e666db94-c548-4cd7-8858-94277fc5c57d
+# ╠═de06b955-cb23-410b-a1c8-07fb7271488b
+# ╠═86abd745-f01b-4b2b-99a0-71eeb992f8a1
+# ╠═e6d935a0-bf22-4394-a8c1-e782a9d22d0d
+# ╟─3c5011f6-9f59-47b6-a0b5-2c3946f06d53
+# ╟─6464d3bc-940e-49e1-99f5-c8073658658b
+# ╠═b5c615b0-babb-4a9f-8da6-993c09c484de
+# ╠═7c3df4d2-ef0d-4e32-822d-7d1c1b6cc650
+# ╠═51e153cd-77a5-4f59-91d7-d52a0e5f1555
+# ╠═654e8c85-205b-4e02-973a-096cd6874fcd
+# ╟─6657e0c5-84e7-4721-951e-012df437c224
+# ╠═04000cb7-943e-46d6-83f6-076790673932
+# ╟─d581d33f-5702-49d2-bac1-367bbb68fd78
+# ╟─45890c99-6860-4535-a50b-a0ec7a97ed7a
+# ╠═6e4d3a43-2531-4a04-a906-8670a2f2d768
+# ╠═814f040d-40f2-408a-b95a-774d6c2a54e2
+# ╠═7b75208f-e8e6-4653-9f22-a58148a20962
+# ╠═5b833881-d5b2-414e-87f0-ef6d48f416fc
+# ╟─0be8effe-aa43-41ce-b5d0-36b2695a0bf8
+# ╠═d706f10b-ca96-487c-bc51-328ad4f1b6d7
+# ╠═20273e50-d109-4576-b569-1bb8f5c401a2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
