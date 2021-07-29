@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -14,7 +14,7 @@ macro bind(def, element)
 end
 
 # ╔═╡ e8bc8487-8e7e-4e5f-a06e-193669f4cce9
-using PlutoUI, ImageView, Images, SymPy, Plots, Luxor, SQLite, DataFrames, Underscores, Interpolations
+using PlutoUI, ImageView, Images, Plots, SymPy, Luxor, SQLite, DataFrames, Underscores, Interpolations, PlutoTest
 
 # ╔═╡ adad2d93-4973-4631-8255-f855d12a2848
 using UUIDs
@@ -315,6 +315,84 @@ Berekening volgens *NBN EN 1993-1-1 §6.2.7*
 	Geen wringing (torsie) grijpt aan. De eenheidscontrole (`UC`) voldoet
 """
 
+# ╔═╡ a5075f8a-6268-4a79-9d86-62db775d2376
+md"""
+### Stabiliteit controle
+Controle van de knikstabiliteit volgens *NBN EN 1993-1-1 §6.3.1*
+"""
+
+# ╔═╡ 60388762-5cee-4ac4-ac92-31fb7fe795c4
+md"""
+#### Knikstabiliteit bij op druk belaste staven
+Volgens *NBN EN 1993-1-1 §6.3.1.1*
+!!! danger "Toepasbaarheid"
+	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1, 2 en 3**
+"""
+
+# ╔═╡ 9a2bef32-f374-4c2f-93e7-9e1142101e2c
+md"""
+Bepalen *reductiefactor* voor **knik**
+"""
+
+# ╔═╡ 87057f63-1d4b-427a-bd1c-236568e7b3a2
+L_cr = 2 * geom[:L] # m - Kniklengte, kolom onderaan vast, bovenaan vrij
+
+# ╔═╡ e1b27c73-cd31-49c3-9495-b4ce3686a96a
+md"""
+De imperfectiefactor $\alpha$ is in overeenstemming met de knikkromme volgens Tabel 6.2 in *NBN EN 1993-1-1*. **Knikeffecten** kunnen worden **verwaarloost indien**
+
+$$\bar{\lambda} \leq 0.2 \text{  of  } \dfrac{N_{Ed}}{N_{cr}} \leq 0.04$$
+"""
+
+# ╔═╡ 815bd927-24d0-4f02-97c0-d99d9b3ace01
+imperfectie = DataFrame([
+		(a0 = 0.13, a = 0.21, b = 0.34, c = 0.49, d = 0.76)
+]) |> first
+
+# ╔═╡ 4fe78740-be25-404f-8d6c-606f08e82510
+α_ = getproperty(imperfectie, kolom[:knikkromme]) # imperfectiefactor
+
+# ╔═╡ b8e307cb-784e-405a-a9a9-351f12ada6c6
+md"""
+#### Kipstabiliteit bij op buiging belaste staven
+Volgens *NBN EN 1993-1-1 §6.3.2*
+!!! danger "Toepasbaarheid"
+	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1 en 2** waarbij voor het weerstandsmoment het plastische weerstandsmoment $W_{pl,y}$ mag gehanteerd worden.
+"""
+
+# ╔═╡ 3c273c59-cd0b-405b-835b-7ed1d910701d
+md"""
+Bepalen *reductiefactor* $\chi_{LT}$ voor **kip** waarbij $_{LT}$ staat voor *lateral torsional* buckling
+"""
+
+# ╔═╡ 949aa8ef-33f9-455d-9471-de202e2a1fc6
+α_LT = getproperty(imperfectie, :a) # imperfectiefactor
+
+# ╔═╡ e09a6e50-b887-489c-9118-a2817aa08513
+md"""
+De imperfectiefactor $\alpha_LT$ is in overeenstemming met de kipkromme volgens Tabel 6.3 in *NBN EN 1993-1-1*. **Kipeffecten** kunnen worden **verwaarloost indien**
+
+$$\bar{\lambda}_{LT} \leq \bar{\lambda}_{LT,0} \text{  of  } \dfrac{M_{Ed}}{M_{cr}} \leq \bar{\lambda}_{LT,0}^2$$
+
+Waarin $\bar{\lambda}_{LT,0}$ volgens *NBN EN 1993-1-1 §6.3.2.3* gelijk is aan $0.4$
+"""
+
+# ╔═╡ 860434ef-648c-4456-aa8c-63fb473f8682
+imperfectie_LT = imperfectie[[:a, :b, :c, :d]]
+
+# ╔═╡ e5d3d66d-3975-46ca-80f8-7f02953ff56a
+md"""
+#### Prismatische, op buiging en druk belaste staven
+Volgens *NBN EN 1993-1-1 §6.3.3*
+!!! danger "Toepasbaarheid"
+	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1 en 2** waarbij voor het weerstandsmoment het plastische weerstandsmoment $W_{pl,y}$ mag gehanteerd worden.
+Staven die aan gecombineerde buiging en druk zijn onderworpen behoren te voldoen aan:
+
+$$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+k_{yy}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\dfrac{\chi_{LT}\ M_{y,Rk}}{\gamma_{M1}}} \leq 1$$
+
+Merk op dat bovenstaande vergelijking een vereenvoudiging is van formule 6.62 en 6.63 uit *NBN EN 1993-1-1* gezien voor een **SHS** profiel de sterkte in beide richtingen gelijk is. De parameter $k_{yy}$ is een interactiefactor, berekend volgens **bijlage B**. De parameter $\Delta M_{y,Ed}$ voor een profiel van **klasse 1 tot 3** is gelijk aan $0$
+"""
+
 # ╔═╡ 695ecf3c-6a51-458d-b63f-8f323df46a8a
 md"""
 # Achterliggende berekeningen
@@ -425,12 +503,42 @@ a_f = min((eig.A - 2 * eig.b * eig.t) / eig.A, 0.5) # Gewalst buisprofiel h=b
 # ╔═╡ 1a356a52-086f-46c6-a828-ac75d1b912c6
 V_plRd = eig.Av * f_yk / γ_M0 / 1000 # kN
 
+# ╔═╡ 23e3d7a4-6896-4249-84d9-5d9da80019f3
+N_cr = π ^ 2 * (eig.I * E * 10^-3) / L_cr ^2 # kN - Eulerknik
+
+# ╔═╡ 745fb05d-67b2-499f-922d-54a325dcd648
+λ_ = sqrt( eig.A * f_yk / N_cr / 1000 ) # rel. slankheid - klasse 1, 2 en 3 doorsneden
+
+# ╔═╡ da7237ae-be7e-49ed-a281-c4fbdeb9dcd1
+ϕ_ = 0.5 * (1 + α_ * (λ_ - 0.2) + λ_ ^ 2)
+
+# ╔═╡ c9472a00-2a95-4a1c-9f2d-db539036002d
+χ_ = min(1 / (ϕ_ + sqrt(ϕ_ ^ 2 - λ_ ^2)), 1) # reductiefactor knikvorm
+
+# ╔═╡ 63acc98a-a2f9-441f-8b45-bfda5ebeec6c
+N_bRd = χ_ * eig.A * f_yk / γ_M1 / 1000 # kN
+
+# ╔═╡ aea467d4-6f7c-46fa-a8c2-d26dbf063892
+M_cr = eig.Wpl * f_yk / 1000 # kNm - Kritisch moment; SHS niet kip gevoelig
+
+# ╔═╡ b83c760f-4caf-4fd2-860b-837a10c2c3ff
+λ_LT = sqrt( (eig.Wpl * f_yk) / M_cr / 1000 ) # relatieve slankheid
+
+# ╔═╡ f5c651f5-de5f-4388-83b4-0b0b317b10a4
+ϕ_LT = 0.5 * (1 + α_LT * (λ_LT - 0.2) + λ_LT ^ 2)
+
+# ╔═╡ d98d815e-9fba-45e9-b0a2-6c89f233cc8d
+χ_LT = min(1 / (ϕ_LT + sqrt( ϕ_LT ^ 2 - λ_LT ^ 2 )), 1.0) # Reductiefactor kip
+
+# ╔═╡ ae2ff552-dd10-4ee0-bc2d-beaea1042dcc
+M_bRd = χ_LT * eig.Wpl * 10^3 * f_yk / γ_M1 / 10^6 # kNm 
+
 # ╔═╡ 7f3a6986-dfab-4e82-8eda-1a0bd72b47bd
 md"""
 Start de `plotly` backend
 """
 
-# ╔═╡ e0b67382-bfc4-482f-9b18-38851f2bdcc3
+# ╔═╡ 17faebbf-9fbd-4860-80b9-c5551bc34390
 plotly()
 
 # ╔═╡ 43a30a97-42c3-446f-b57d-47af9b47565b
@@ -469,12 +577,6 @@ mutable struct UC
 	limiet::Float64 # noemer
 	check::Check 
 	UC(beschrijving, waarde, limiet) = (uc = new(beschrijving, waarde, limiet); uc.check = Check(waarde / limiet <= 1); uc)
-end
-
-# ╔═╡ dc115304-6793-432f-b423-23a68beb6bd7
-function controle(r::NamedTuple)
-	checks = Array{Union{Missing, UC}}(missing, 4)
-	return checks
 end
 
 # ╔═╡ a835b337-5d25-47c2-a34c-b74beb4b62de
@@ -534,6 +636,41 @@ function Base.show(io::IO, mime::MIME"text/html", tc::TwoColumn)
 	Base.write(io, """
 			</div>
 		</div>
+	""")
+end
+
+# ╔═╡ 1f9226f8-3878-4eb4-bb46-a3b6e4eedbfa
+md"""
+Maak een html `collapse` element
+"""
+
+# ╔═╡ e52b7ba4-6635-4df0-9b3e-8277cb3f4f5f
+struct Foldable{C}
+    title::String
+    content::C
+end
+
+# ╔═╡ cd9b8bbf-f0cf-41d7-84e3-aa68052242a7
+Foldable(
+	"Table 6.2 in NBN EN 1993-1-1 §6.3.3", 
+	md""" 
+	 $(load("assets/img/NBN EN 1993-1-1 tab 6.2.jpg"))
+	"""
+)
+
+# ╔═╡ 512507a3-9238-441f-a5e4-b528e98ae49e
+function Base.show(io::IO, mime::MIME"text/html", fld::Foldable)
+	Base.write(io, """
+		<details>
+			<summary>
+				$(fld.title)
+			</summary>
+			<p>
+	""")
+	show(io, mime, fld.content)
+	Base.write(io, """
+			</p>
+		</summary>
 	""")
 end
 
@@ -855,8 +992,14 @@ UC_N = UC(md"$\dfrac{N_{Ed}}{N_{c,Rd}}$", N_Ed, N_cRd)
 # ╔═╡ 0c044b93-5cd4-4ef9-a8e4-df729d7b8f87
 n = N_Ed / N_cRd
 
+# ╔═╡ 7c4f44c5-3060-4be4-9f46-16a20075e9d5
+UC_Nstab = UC(md"$\dfrac{N_{Ed}}{N_{b,Rd}}$", N_Ed, N_bRd)
+
 # ╔═╡ 81060926-426e-4155-9c27-e833902d29bb
 M_Ed = abs(UGT.M(t_)) # kNm
+
+# ╔═╡ 1ce7661e-1e86-4b0e-82a2-4fa7041d43d4
+UC_Mstab = UC(md"$\dfrac{M_{Ed}}{M_{b,Rd}}$", M_Ed, M_bRd)
 
 # ╔═╡ 5456715c-bf21-40c9-b955-d300988fa569
 V_Ed = abs(UGT.V(t_)) # kN
@@ -885,11 +1028,23 @@ UC_M = UC(md"$\dfrac{M_{Ed}}{M_{N,Rd}}$", M_Ed, M_NRd)
 # ╔═╡ eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
 UC_N + UC_M + UC_V
 
-# ╔═╡ 0f172efb-5844-4195-8c5b-766eaaa05b13
-[(opl.N.(t), opl.V.(t), opl.M.(t)) for t in 0:0.05:geom[:L]]
+# ╔═╡ 7fefbffc-1dbc-42fe-879e-3868db9af411
+UGT_M = UGT.M.(0:0.05:geom[:L])
 
-# ╔═╡ b826e58a-1dc4-450d-838c-2ff31b9efc38
-test = [(n(), v(t), m(t)) for (n, v, m) in zip(opl.N, opl.V, opl.M), t in 0:0.05:geom[:L]]
+# ╔═╡ 400e257a-d9dc-422e-9eb2-f614261e71dd
+UGT_M1 = UGT_M[1]
+
+# ╔═╡ b78f6455-4aad-49b4-9460-f11ac7b2efc7
+UGT_M2 = UGT_M[end]
+
+# ╔═╡ b0438740-c67e-4392-a278-097ce0e402d1
+C_my = max(0.6 + 0.4 * UGT_M2 / UGT_M1, 0.4)
+
+# ╔═╡ 506afd55-e65e-4781-b405-61f9ba935d6c
+k_yy = C_my * (1 + min((λ_ - 0.2), 0.8) * N_Ed / N_bRd) # Interactiefactor
+
+# ╔═╡ 2f8ae4b2-c79c-4784-884d-94afa6f2c9c9
+plt.lines(0:0.05:geom[:L], UGT_M)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -900,6 +1055,7 @@ Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 Luxor = "ae8d54c2-7ccd-5906-9d76-62fc9837b5bc"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+PlutoTest = "cb4044da-4d16-4ffa-a6a3-8cad7f73ebdc"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 SQLite = "0aa819cd-b072-5ff4-a722-6bc24af294d9"
 SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
@@ -913,6 +1069,7 @@ Images = "~0.23.3"
 Interpolations = "~0.13.3"
 Luxor = "~2.14.0"
 Plots = "~1.15.2"
+PlutoTest = "~0.1.0"
 PlutoUI = "~0.7.9"
 SQLite = "~1.1.4"
 SymPy = "~1.0.50"
@@ -925,9 +1082,9 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 [[ATK_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "a5a8f114e4d70bee6cf82ed28b488d57f1fa9467"
+git-tree-sha1 = "58c36d8a1beeb12d63921bcfaa674baf30a1140e"
 uuid = "7b86fcea-f67b-53e1-809c-8f1719c154e8"
-version = "2.36.0+0"
+version = "2.36.1+0"
 
 [[AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -946,9 +1103,9 @@ uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
 
 [[ArrayInterface]]
 deps = ["IfElse", "LinearAlgebra", "Requires", "SparseArrays", "Static"]
-git-tree-sha1 = "a71d224f61475b93c9e196e83c17c6ac4dedacfa"
+git-tree-sha1 = "655d9e28a75f88eea3fb81a12f62da9bade89fb5"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "3.1.18"
+version = "3.1.19"
 
 [[Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
@@ -961,9 +1118,9 @@ version = "1.0.0"
 
 [[AxisArrays]]
 deps = ["Dates", "IntervalSets", "IterTools", "RangeArrays"]
-git-tree-sha1 = "f31f50712cbdf40ee8287f0443b57503e34122ef"
+git-tree-sha1 = "d127d5e4d86c7680b20c35d40b503c74b9a39b5e"
 uuid = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
-version = "0.4.3"
+version = "0.4.4"
 
 [[Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
@@ -1035,9 +1192,9 @@ version = "0.2.0"
 
 [[Compat]]
 deps = ["Base64", "Dates", "DelimitedFiles", "Distributed", "InteractiveUtils", "LibGit2", "Libdl", "LinearAlgebra", "Markdown", "Mmap", "Pkg", "Printf", "REPL", "Random", "SHA", "Serialization", "SharedArrays", "Sockets", "SparseArrays", "Statistics", "Test", "UUIDs", "Unicode"]
-git-tree-sha1 = "dc7dedc2c2aa9faf59a55c622760a25cbefbe941"
+git-tree-sha1 = "344f143fa0ec67e47917848795ab19c6a455f32c"
 uuid = "34da2185-b29b-5c13-b0c7-acf172513d20"
-version = "3.31.0"
+version = "3.32.0"
 
 [[CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
@@ -1233,9 +1390,9 @@ version = "0.52.0"
 
 [[GTK3_jll]]
 deps = ["ATK_jll", "Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Libepoxy_jll", "Pango_jll", "Pkg", "Wayland_jll", "Xorg_libX11_jll", "Xorg_libXcomposite_jll", "Xorg_libXcursor_jll", "Xorg_libXdamage_jll", "Xorg_libXext_jll", "Xorg_libXfixes_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "Xorg_libXrender_jll", "at_spi2_atk_jll", "gdk_pixbuf_jll", "iso_codes_jll", "xkbcommon_jll"]
-git-tree-sha1 = "1f92baaf9e9cdfaa59e0f9384b7fbdad6b735662"
+git-tree-sha1 = "f2922cb0105ba076b560e3922910f8e3749aa91a"
 uuid = "77ec8976-b24b-556a-a1bf-49a033a670a6"
-version = "3.24.29+0"
+version = "3.24.30+0"
 
 [[GeometryBasics]]
 deps = ["EarCut_jll", "IterTools", "LinearAlgebra", "StaticArrays", "StructArrays", "Tables"]
@@ -1251,9 +1408,9 @@ version = "0.21.0+0"
 
 [[Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE_jll", "Pkg", "Zlib_jll"]
-git-tree-sha1 = "47ce50b742921377301e15005c96e979574e130b"
+git-tree-sha1 = "7bf67e9a481712b3dbe9cb3dac852dc4b1162e02"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.68.1+0"
+version = "2.68.3+0"
 
 [[Graphics]]
 deps = ["Colors", "LinearAlgebra", "NaNMath"]
@@ -1295,6 +1452,11 @@ deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll",
 git-tree-sha1 = "8a954fed8ac097d5be04921d595f741115c1b2ad"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
 version = "2.8.1+0"
+
+[[HypertextLiteral]]
+git-tree-sha1 = "1e3ccdc7a6f7b577623028e0095479f4727d8ec1"
+uuid = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
+version = "0.8.0"
 
 [[IdentityRanges]]
 deps = ["OffsetArrays"]
@@ -1518,9 +1680,9 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 
 [[Libepoxy_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pkg", "Xorg_libX11_jll"]
-git-tree-sha1 = "aeac8ae441bc55be433ab53b729ffac274997320"
+git-tree-sha1 = "ae76616c0e0cbcbedc68d0121fe409598efc0b05"
 uuid = "42c93a91-0102-5b3f-8f9d-e41de60ac950"
-version = "1.5.4+1"
+version = "1.5.8+0"
 
 [[Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1756,6 +1918,12 @@ git-tree-sha1 = "f3a57a5acc16a69c03539b3684354cbbbb72c9ad"
 uuid = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 version = "1.15.2"
 
+[[PlutoTest]]
+deps = ["HypertextLiteral", "InteractiveUtils", "Markdown", "Test"]
+git-tree-sha1 = "3479836b31a31c29a7bac1f09d95f9c843ce1ade"
+uuid = "cb4044da-4d16-4ffa-a6a3-8cad7f73ebdc"
+version = "0.1.0"
+
 [[PlutoUI]]
 deps = ["Base64", "Dates", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "Suppressor"]
 git-tree-sha1 = "44e225d5837e2a2345e69a1d1e01ac2443ff9fcb"
@@ -1919,9 +2087,9 @@ uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 
 [[SpecialFunctions]]
 deps = ["ChainRulesCore", "LogExpFunctions", "OpenSpecFun_jll"]
-git-tree-sha1 = "a50550fa3164a8c46747e62063b4d774ac1bcf49"
+git-tree-sha1 = "508822dca004bf62e210609148511ad03ce8f1d8"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "1.5.1"
+version = "1.6.0"
 
 [[StackViews]]
 deps = ["OffsetArrays"]
@@ -1937,9 +2105,9 @@ version = "0.3.0"
 
 [[StaticArrays]]
 deps = ["LinearAlgebra", "Random", "Statistics"]
-git-tree-sha1 = "1b9a0f17ee0adde9e538227de093467348992397"
+git-tree-sha1 = "885838778bb6f0136f8317757d7803e0d81201e4"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.2.7"
+version = "1.2.9"
 
 [[Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
@@ -1952,9 +2120,9 @@ version = "1.0.0"
 
 [[StatsBase]]
 deps = ["DataAPI", "DataStructures", "LinearAlgebra", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "2f6792d523d7448bbe2fec99eca9218f06cc746d"
+git-tree-sha1 = "fed1ec1e65749c4d96fc20dd13bea72b55457e62"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.33.8"
+version = "0.33.9"
 
 [[StructArrays]]
 deps = ["Adapt", "DataAPI", "StaticArrays", "Tables"]
@@ -2205,9 +2373,9 @@ version = "2.34.0+4"
 
 [[gdk_pixbuf_jll]]
 deps = ["Artifacts", "Glib_jll", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg", "Xorg_libX11_jll", "libpng_jll"]
-git-tree-sha1 = "031f60d4362fba8f8778b31047491823f5a73000"
+git-tree-sha1 = "0facfc4bfd873c21b83a053bbf182b9ef19c69d8"
 uuid = "da03df04-f53b-5353-a52f-6a8b0620ced0"
-version = "2.38.2+9"
+version = "2.42.6+0"
 
 [[hicolor_icon_theme_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2357,16 +2525,45 @@ version = "0.9.1+5"
 # ╠═453c07c4-5392-470a-a573-fe062e0cd8ff
 # ╟─5c064cef-b7c2-4fb6-9013-8afa0f11206c
 # ╠═eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
-# ╠═0f172efb-5844-4195-8c5b-766eaaa05b13
-# ╠═b826e58a-1dc4-450d-838c-2ff31b9efc38
-# ╠═dc115304-6793-432f-b423-23a68beb6bd7
+# ╟─a5075f8a-6268-4a79-9d86-62db775d2376
+# ╟─60388762-5cee-4ac4-ac92-31fb7fe795c4
+# ╠═63acc98a-a2f9-441f-8b45-bfda5ebeec6c
+# ╟─9a2bef32-f374-4c2f-93e7-9e1142101e2c
+# ╠═c9472a00-2a95-4a1c-9f2d-db539036002d
+# ╠═da7237ae-be7e-49ed-a281-c4fbdeb9dcd1
+# ╠═745fb05d-67b2-499f-922d-54a325dcd648
+# ╠═4fe78740-be25-404f-8d6c-606f08e82510
+# ╠═23e3d7a4-6896-4249-84d9-5d9da80019f3
+# ╠═87057f63-1d4b-427a-bd1c-236568e7b3a2
+# ╟─e1b27c73-cd31-49c3-9495-b4ce3686a96a
+# ╟─815bd927-24d0-4f02-97c0-d99d9b3ace01
+# ╟─cd9b8bbf-f0cf-41d7-84e3-aa68052242a7
+# ╟─7c4f44c5-3060-4be4-9f46-16a20075e9d5
+# ╟─b8e307cb-784e-405a-a9a9-351f12ada6c6
+# ╠═ae2ff552-dd10-4ee0-bc2d-beaea1042dcc
+# ╟─3c273c59-cd0b-405b-835b-7ed1d910701d
+# ╠═d98d815e-9fba-45e9-b0a2-6c89f233cc8d
+# ╠═f5c651f5-de5f-4388-83b4-0b0b317b10a4
+# ╠═b83c760f-4caf-4fd2-860b-837a10c2c3ff
+# ╠═949aa8ef-33f9-455d-9471-de202e2a1fc6
+# ╠═aea467d4-6f7c-46fa-a8c2-d26dbf063892
+# ╟─e09a6e50-b887-489c-9118-a2817aa08513
+# ╟─860434ef-648c-4456-aa8c-63fb473f8682
+# ╟─1ce7661e-1e86-4b0e-82a2-4fa7041d43d4
+# ╟─e5d3d66d-3975-46ca-80f8-7f02953ff56a
+# ╠═506afd55-e65e-4781-b405-61f9ba935d6c
+# ╠═7fefbffc-1dbc-42fe-879e-3868db9af411
+# ╠═400e257a-d9dc-422e-9eb2-f614261e71dd
+# ╠═b78f6455-4aad-49b4-9460-f11ac7b2efc7
+# ╠═2f8ae4b2-c79c-4784-884d-94afa6f2c9c9
+# ╠═b0438740-c67e-4392-a278-097ce0e402d1
 # ╟─695ecf3c-6a51-458d-b63f-8f323df46a8a
 # ╟─1e5bd62b-5327-4abb-b4c0-9df3c2a92be9
 # ╠═e8bc8487-8e7e-4e5f-a06e-193669f4cce9
 # ╟─3c07526e-31f8-4857-bd62-e6fc71d50c5b
 # ╠═5da33fcf-33d3-492b-af3a-c07623e87f61
 # ╟─7f3a6986-dfab-4e82-8eda-1a0bd72b47bd
-# ╠═e0b67382-bfc4-482f-9b18-38851f2bdcc3
+# ╠═17faebbf-9fbd-4860-80b9-c5551bc34390
 # ╟─43a30a97-42c3-446f-b57d-47af9b47565b
 # ╠═adad2d93-4973-4631-8255-f855d12a2848
 # ╠═d35dfa59-d3ba-4cd0-b229-2808e61e609c
@@ -2380,6 +2577,9 @@ version = "0.9.1+5"
 # ╟─1d483436-9f48-41f7-b5b3-c49fb81a6824
 # ╠═e8773634-2240-4870-aa5c-8460459178b8
 # ╠═af04ceeb-5a97-4eee-bbd7-0aa324dc8704
+# ╟─1f9226f8-3878-4eb4-bb46-a3b6e4eedbfa
+# ╠═e52b7ba4-6635-4df0-9b3e-8277cb3f4f5f
+# ╠═512507a3-9238-441f-a5e4-b528e98ae49e
 # ╟─5f7b25aa-2fd6-44c6-95a2-94232a444061
 # ╠═02284a59-bbc5-404a-b63c-6b058e4a1ac2
 # ╠═1b159512-beba-4227-9da1-c8bf34ce8de3
