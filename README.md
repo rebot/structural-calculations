@@ -10,15 +10,17 @@ De berekeningen worden opgesteld in *Julia* onder het motto *writes like python,
 
 ### Lastendaling
 
- De lasten worden afgeleid uit de lastendaling in *Excel*. De krachten uit de lastendaling worden gebruik in de stabiliteitsberekeningen. Geen interactieve link is opgesteld tussen beide. 
+De lasten worden afgeleid uit de lastendaling in *Excel*. De krachten uit de lastendaling worden gebruik in de stabiliteitsberekeningen. Geen interactieve link is opgesteld tussen beide. 
 
- ### Profiel 1
+### Profiel 1
 
- Profiel 1 bevind zich ter hoogte van de keuken. Het profiel is isostatisch opgelegd. De steunpunten bevinden zich op de uiteinden van de ligger. Het profiel dient de bovenliggende vloer opgebouwd uit potten en balken op te vangen. De lengte bedraagt 3,995m. 
+Profiel 1 bevind zich ter hoogte van de keuken. Het profiel is isostatisch opgelegd. De steunpunten bevinden zich op de uiteinden van de ligger. Het profiel dient de bovenliggende vloer opgebouwd uit potten en balken op te vangen. De lengte bedraagt 3,995m. 
 
 Ga naar [Berekening Profiel 1](./pages/profiel_1.html)
 
- ### Profiel 2
+### Profiel 2
  
- 
+Profiel 2 bevind zich ter hoogte van de keuken, zijde living. Het profiel is isostatisch opgelegd, maar kraagt gedeeltelijk uit, dit midden in de woning. De steunpunten bevinden zich op het uiteinde van de ligger naar de tuin toe, en binnen de ligger ter hoogte van de living. Het profiel dient de bovenliggende vloer opgebouwd uit potten en balken op te vangen. De lengte bedraagt X,XXXm. 
+
+Ga naar [Berekening Profiel 2](./pages/profiel_2.html)
 
