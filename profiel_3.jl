@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -18,9 +18,6 @@ using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON
 
 # ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
 situatieschets = load("./assets/img/profiel_3.jpg")
-
-# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
-PlutoUI.TableOfContents()
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -48,6 +45,9 @@ md"""
 # ╔═╡ 883ced2c-2403-4c81-8d80-8f99536ffbe8
 naam = "Profiel 3"
 
+# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
+PlutoUI.TableOfContents(title=string("Berekening ", naam), depth=4)
+
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 md"Naam van het profiel; $\text{naam}$ = $naam"
 
@@ -67,6 +67,11 @@ kolom = (
 md"""
 !!! danger "Opmerking"
 	Bij de controle in **UGT** wordt de momentweerstand niet verminderd in functie van de dwarskracht. Er wordt op toegezien dat de `Check 4` de waarde van $0.50$ niet overschrijdt. Indien de *Unity Check* groter is, dan grijpen we terug naar NBN EN 1993 om een aangepaste controle uit te voeren.
+"""
+
+# ╔═╡ 5239a5bf-45c8-4c0d-9f5a-70e8184f30b6
+md"""
+Resulterende krachten ter hoogte van de steunpunten voor afdracht naar **kolom 1** en **kolom 2**
 """
 
 # ╔═╡ 8f910bf3-5227-4113-9476-6136194a5e60
@@ -185,10 +190,13 @@ md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wo
 # ╔═╡ 9369fece-8b5e-4817-aee3-3476d43e1c2c
 combinaties = DataFrame([
 	(check=:GGT, naam="p1", formule="g1 + gp + 0.5 * q1_vloer"),
+	(check=:GGT_K, naam="p1", formule="g1 + gp + q1_vloer + 0.5 * q1_sneeuw"),
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
+	(check=:GGT_K, naam="p2", formule="g2 + gp + q2_vloer + 0.5 * q2_sneeuw"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
 	(check=:GGT, naam="p3", formule="g3 + gp + 0.5 * q3_vloer"),
+	(check=:GGT_K, naam="p3", formule="g3 + gp + q3_vloer + 0.5 * q3_sneeuw"),
 	(check=:UGT, naam="p3", formule="1.35 * (g3 + gp) + 1.5 * (q3_vloer + 0.5 * q3_sneeuw)"),
 ])
 
@@ -1124,6 +1132,20 @@ rvw_volledig = DataFrames.flatten(
 		) => :R3
 	),
 	:R3
+)
+
+# ╔═╡ 5a9b1ce5-c92d-4716-aadd-9a468c59b9de
+combine(
+	groupby(
+		select(rvw_volledig, :,
+			AsTable(DataFrames.Not(:check)) => 
+				ByRow(r -> [R1, R2] .|> f -> f(Dict(keys(r) .|> eval .=> values(r))...) |> rnd) => [:R1, :R2]
+		), 
+		:check
+	),
+	:R1 => maximum,
+	:R2 => maximum,
+	:R3 => minimum
 )
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
@@ -2974,6 +2996,8 @@ version = "0.9.1+5"
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
 # ╟─542f69ac-77c5-47d7-be6c-94ba82a50ef7
+# ╟─5239a5bf-45c8-4c0d-9f5a-70e8184f30b6
+# ╟─5a9b1ce5-c92d-4716-aadd-9a468c59b9de
 # ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╠═9364f897-0666-4ebe-9725-3c864db07b42
 # ╠═b93d2ce0-ac8a-4487-9d1d-0300db4a9df8

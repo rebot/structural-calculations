@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -18,9 +18,6 @@ using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON
 
 # ╔═╡ 0105efdf-7bb8-47c0-9b28-e3ed066b067d
 situatieschets = load("./assets/img/profiel_1.jpg")
-
-# ╔═╡ 940cf22e-e994-423d-bfb5-1b54259d29ee
-PlutoUI.TableOfContents()
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -41,6 +38,9 @@ Eenvoudig opgelegde ligger met een gedeeltelijke uitkraging en 3 verdeelde belas
 
 # ╔═╡ 56f65932-b5b1-44c1-bfc3-957b8a4b7f26
 naam = "Profiel 1"
+
+# ╔═╡ 940cf22e-e994-423d-bfb5-1b54259d29ee
+PlutoUI.TableOfContents(title=string("Berekening ", naam), depth=4)
 
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 md"""
@@ -92,8 +92,10 @@ md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wo
 # ╔═╡ 9369fece-8b5e-4817-aee3-3476d43e1c2c
 combinaties = DataFrame([
 	(check=:GGT, naam="p1", formule="g1 + gp + 0.5 * q1_vloer"),
+	(check=:GGT_K, naam="p1", formule="g1 + gp + q1_vloer + 0.5 * q1_sneeuw"),
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
+	(check=:GGT_K, naam="p2", formule="g2 + gp + q2_vloer + 0.5 * q2_sneeuw"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
 ])
 

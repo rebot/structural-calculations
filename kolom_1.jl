@@ -22,24 +22,43 @@ using UUIDs
 # ╔═╡ 5f090cf6-bf5d-4663-860c-d694b82ca64a
 situatieschets = load("./assets/img/profiel_2.jpg")
 
-# ╔═╡ 96b36181-5dd7-4b7f-b36c-b41c297aee4b
-PlutoUI.TableOfContents()
-
 # ╔═╡ 6fd93b12-b898-415c-93e1-5c3c6337bd9f
 md"""
 ## Conclussie
 Een controle van de draagkracht van de kolom is uitgevoerd, dit zowel in **GGT** als **UGT**. Onderstaande controles zijn uitgevoerd.
 
 Controles in **GGT**
-1. 
+
+ $\longrightarrow$ Controle der vervormingen - zie de controles onder het hoofdstuk *Controle*
 
 Controles in **UGT**
-2. **Elastische toetsing** aan de hand van het vloeicriterium van *Maxwell–Huber–Hencky–von Mises*, met $\sigma_{x,Ed}$ de spanning in de lengterichting, $\sigma_{z,Ed}$ de spanning in de dwarsrichting en $\tau_{Ed}$ de schuifspanning in een punt, maar **controle op basis van weerstanden** en interactie tussen $N_{Rd}$, $V_{Rd}$ en $M_{Rd}$ geniet voorkeur.
+
+ $\longrightarrow$ Doorsnede- en stabiliteitscontrole - zie de controles onder het hoofdstuk *Controle*
+
+Algemeen (conservatief):
+
+- **Elastische toetsing** aan de hand van het vloeicriterium van *Maxwell–Huber–Hencky–von Mises*, met $\sigma_{x,Ed}$ de spanning in de lengterichting, $\sigma_{z,Ed}$ de spanning in de dwarsrichting en $\tau_{Ed}$ de schuifspanning in een punt, maar **controle op basis van weerstanden** en interactie tussen $N_{Rd}$, $V_{Rd}$ en $M_{Rd}$ geniet voorkeur.
 $$\left(\dfrac{\sigma_{x,Ed}}{f_y/\gamma_{M0}}\right)^2 + \left(\dfrac{\sigma_{z,Ed}}{f_y/\gamma_{M0}}\right)^2 - \left(\dfrac{\sigma_{x,Ed}}{f_y/\gamma_{M0}}\right)\left(\dfrac{\sigma_{z,Ed}}{f_y/\gamma_{M0}}\right) + 3 \left(\dfrac{\tau_{Ed}}{f_y/\gamma_{M0}}\right) \leq 1$$
 
-3. **Conservatieve benadering** door het **lineair optellen** verhouding rekenwaarden belastingseffecten en hun weerstand kan ook. 
+- **Conservatieve benadering** door het **lineair optellen** verhouding rekenwaarden belastingseffecten en hun weerstand kan ook. 
 $$\dfrac{N_{Ed}}{N_{Rd}} + \dfrac{M_{y,Ed}}{M_{y,Rd}} + \dfrac{M_{z,Ed}}{M_{z,Rd}} <= 1$$
 
+Een **controle op basis van weerstanden** en met interactie tussen $N_{Rd}$, $V_{Rd}$ en $M_{Rd}$ is beschouwd in onderhavige rekennota.
+"""
+
+# ╔═╡ a12b2f6b-0f6f-4891-8e49-e9c0456cb203
+md"""
+### Doorsnedecontrole `:UGT`
+"""
+
+# ╔═╡ fc3409d7-2873-4410-8e9d-299c4dbfd4ab
+md"""
+### Stabiliteitscontrole `:UGT`
+"""
+
+# ╔═╡ 99cfd8a5-362a-48a6-9c8f-aca67c63a616
+md"""
+### Vervormingen `:GGT`
 """
 
 # ╔═╡ 479ce586-0709-42a1-aa7d-2e7d8e4c5b7b
@@ -60,7 +79,7 @@ Profieldoorsnede
 
 # ╔═╡ 81d77b92-3499-451d-b485-b8378cdbf611
 kolom = (
-	naam = "SHS 120/5",
+	naam = "SHS 140/5",
 	kwaliteit = "S235",
 	beschrijving = "Kolom 1",
 	knikkromme = :a0
@@ -71,6 +90,9 @@ md"""
 # Berekening $(kolom[:beschrijving]) - $(kolom[:naam])
 Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1** en **Profiel 2** ondersteund en staat op de hoek van de kelder.
 """
+
+# ╔═╡ 96b36181-5dd7-4b7f-b36c-b41c297aee4b
+PlutoUI.TableOfContents(title=string("Berekening ",kolom[:beschrijving]), depth=4)
 
 # ╔═╡ 83113699-96e8-4cce-9101-37f016855b49
 md"""
@@ -107,10 +129,15 @@ Overzicht van de aangrijpende belastingen
 
 # ╔═╡ 6967230f-8e86-48d7-affb-8f537f50b053
 gevallen = DataFrame([
-	(naam="GGT1", waarde=30.0, beschrijving="Afdracht profiel 1 - lasten GGT"),
-	(naam="GGT2", waarde=40.0, beschrijving="Afdracht profiel 2 - lasten GGT"),
-	(naam="UGT1", waarde=40.0, beschrijving="Afdracht profiel 1 - lasten UGT"),
-	(naam="UGT2", waarde=40.0, beschrijving="Afdracht profiel 2 - lasten UGT")
+	(naam="GGT1", waarde=59.874, beschrijving="Afdracht profiel 1 - lasten GGT Frequent"),
+	(naam="GGT2", waarde=128.005, beschrijving="Afdracht profiel 2 - lasten GGT Frequent"),
+	(naam="GGT3", waarde=13.248, beschrijving="Afdracht profiel 3 - lasten GGT Frequent"),
+	(naam="GGT_K1", waarde=72.596, beschrijving="Afdracht profiel 1 - lasten GGT Karakteristiek"),
+	(naam="GGT_K2", waarde=157.411, beschrijving="Afdracht profiel 2 - lasten GGT Karakteristiek"),
+	(naam="GGT_K3", waarde=15.274, beschrijving="Afdracht profiel 3 - lasten GGT Karakteristiek"),
+	(naam="UGT1", waarde=101.412, beschrijving="Afdracht profiel 1 - lasten UGT"),
+	(naam="UGT2", waarde=220.561, beschrijving="Afdracht profiel 2 - lasten UGT"),
+	(naam="UGT3", waarde=21.227, beschrijving="Afdracht profiel 3 - lasten UGT")
 ])
 
 # ╔═╡ 1402febf-ba8c-475a-8f23-a916d8d9815b
@@ -119,8 +146,9 @@ replacer = (g = gevallen; Regex(join(g.naam, "|")) => s -> g.waarde[g.naam .== s
 # ╔═╡ 650a4e73-0ff4-4ab2-be22-70143654aa57
 combinaties = select!(
 	DataFrame([
-		(check=:GGT, naam="F", formule="GGT1 + GGT2"),
-		(check=:UGT, naam="F", formule="UGT1 + UGT2")
+		(check=:GGT, naam="F", formule="GGT1 + GGT2 + GGT3"),
+		(check=:GGT_K, naam="F", formule="GGT_K1 + GGT_K2 + GGT_K3"),
+		(check=:UGT, naam="F", formule="UGT1 + UGT2 + UGT3")
 	]), 
 	:, 
 	:formule => 
@@ -268,10 +296,13 @@ Aftoetsen van de interne krachten en vervormingen
 γ_M0, γ_M1, γ_M2 = 1.00, 1.00, 1.25
 
 # ╔═╡ d1163bac-8c98-4aa9-bb79-b2f09e46392f
-md"""
-### Uiterste grenstoestanden `:UGT`
-Selecteer de abscis $t$ = $(@bind t_ Slider(0:0.05:geom[:L], show_value=true))
-"""
+begin 
+	slider_t_ = @bind t_ Slider(0:0.05:geom[:L], show_value=true)
+	md"""
+	### Uiterste grenstoestanden `:UGT`
+	Selecteer de abscis $t$ = $(slider_t_)
+	"""
+end
 
 # ╔═╡ 3097f9ac-fedd-49f6-853d-ef6b5eee2826
 md"""
@@ -317,13 +348,13 @@ Berekening volgens *NBN EN 1993-1-1 §6.2.7*
 
 # ╔═╡ a5075f8a-6268-4a79-9d86-62db775d2376
 md"""
-### Stabiliteit controle
+#### Stabiliteit controle
 Controle van de knikstabiliteit volgens *NBN EN 1993-1-1 §6.3.1*
 """
 
 # ╔═╡ 60388762-5cee-4ac4-ac92-31fb7fe795c4
 md"""
-#### Knikstabiliteit bij op druk belaste staven
+##### Knikstabiliteit bij op druk belaste staven
 Volgens *NBN EN 1993-1-1 §6.3.1.1*
 !!! danger "Toepasbaarheid"
 	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1, 2 en 3**
@@ -354,7 +385,7 @@ imperfectie = DataFrame([
 
 # ╔═╡ b8e307cb-784e-405a-a9a9-351f12ada6c6
 md"""
-#### Kipstabiliteit bij op buiging belaste staven
+##### Kipstabiliteit bij op buiging belaste staven
 Volgens *NBN EN 1993-1-1 §6.3.2*
 !!! danger "Toepasbaarheid"
 	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1 en 2** waarbij voor het weerstandsmoment het plastische weerstandsmoment $W_{pl,y}$ mag gehanteerd worden.
@@ -382,7 +413,7 @@ imperfectie_LT = imperfectie[[:a, :b, :c, :d]]
 
 # ╔═╡ e5d3d66d-3975-46ca-80f8-7f02953ff56a
 md"""
-#### Prismatische, op buiging en druk belaste staven
+##### Prismatische, op buiging en druk belaste staven
 Volgens *NBN EN 1993-1-1 §6.3.3*
 !!! danger "Toepasbaarheid"
 	Onderstaande uiteenzetting geldt enkel voor staven van **klasse 1 en 2** waarbij voor het weerstandsmoment het plastische weerstandsmoment $W_{pl,y}$ mag gehanteerd worden.
@@ -391,6 +422,18 @@ Staven die aan gecombineerde buiging en druk zijn onderworpen behoren te voldoen
 $$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+k_{yy}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\dfrac{\chi_{LT}\ M_{y,Rk}}{\gamma_{M1}}} \leq 1$$
 
 Merk op dat bovenstaande vergelijking een vereenvoudiging is van formule 6.62 en 6.63 uit *NBN EN 1993-1-1* gezien voor een **SHS** profiel de sterkte in beide richtingen gelijk is. De parameter $k_{yy}$ is een interactiefactor, berekend volgens **bijlage B**. De parameter $\Delta M_{y,Ed}$ voor een profiel van **klasse 1 tot 3** is gelijk aan $0$
+"""
+
+# ╔═╡ d59ea3e9-e374-4e80-aee6-3c4878745f0d
+md"""
+### Bruikbaarheidsgrenstoestanden `:GGT`
+Selecteer de abscis $t$ = $(slider_t_)
+"""
+
+# ╔═╡ d8003147-45a6-4b8f-960e-70bc80f8cb69
+md"""
+#### Horizontale verplaatsing
+Volgens *NBN EN 1993-1-1 §7.2.2* met verwijzing naar *NBN EN 1990 - bijlage A1.4*. In de natianale bijlage (*ANB*) wordt verwezen naar de norm *NBN B 03-003* die toegepast dient te worden in België. Grenswaarden van de vervorming wordt vastgelegd in tabel 3 onder §7.
 """
 
 # ╔═╡ 695ecf3c-6a51-458d-b63f-8f323df46a8a
@@ -571,13 +614,64 @@ Definieer een nieuwe *type* getiteld *Unity Check* of `UC`
 """
 
 # ╔═╡ d3b4ab06-11e2-4fd3-b994-60c6aabf5308
-mutable struct UC
+struct UC
 	beschrijving::Markdown.MD
 	waarde::Float64 # teller
 	limiet::Float64 # noemer
-	check::Check 
-	UC(beschrijving, waarde, limiet) = (uc = new(beschrijving, waarde, limiet); uc.check = Check(waarde / limiet <= 1); uc)
 end
+
+# ╔═╡ b4205158-167f-4521-a9ef-6b0d39cc9238
+struct Constant
+	beschrijving::Markdown.MD
+	waarde::Real
+end
+
+# ╔═╡ efcf9a17-4b36-4c0d-88c4-e597b175e0eb
+function Base.show(io::IO, mime::MIME"text/html", uc::UC)
+	afronden = t -> (d -> round(d, digits=t))
+	subs = Dict(
+		"beschrijving" => uc.beschrijving.content[1].formula, 
+		"waarde" => uc.waarde |> afronden(1),
+		"limiet" => uc.limiet |> afronden(1),
+		"uc" => (uc.waarde / uc.limiet) |> afronden(2)
+	)
+	format = raw"$\text{UC} = beschrijving = \dfrac{waarde}{limiet} = uc\rightarrow$"
+	
+	Base.write(io, """
+		<div style="display: flex; align-items: center; justify-content: center;">				<div>
+	""")
+	show(io, mime, Markdown.parse(
+			replace(format, r"beschrijving|waarde|limiet|uc" => s -> subs[s]))
+	)
+	Base.write(io, """
+			</div>
+			<div style="flex: 1; padding-left: 2px;">
+	""")
+	show(io, mime, Check(subs["uc"] <= 1))
+	Base.write(io, """
+			</div>
+		</div>
+	""")
+end
+
+# ╔═╡ 6942d492-5d8b-4a0e-9824-e55318cd03c0
+function Base.show(io::IO, mime::MIME"text/html", c::Constant)
+	afronden = t -> (d -> round(d, digits=t))
+
+	show(io, mime, Markdown.MD(
+			Markdown.LaTeX(
+				string( 
+					first(c.beschrijving.content).formula,
+					"=", 
+					c.waarde |> afronden(3)
+				)
+			)
+		)
+	)
+end
+
+# ╔═╡ fee57389-2d06-447a-ad08-9866b7f72e4b
+Base.copy(uc::UC) = UC(uc.beschrijving, uc.waarde, uc.limiet)
 
 # ╔═╡ a835b337-5d25-47c2-a34c-b74beb4b62de
 md"""
@@ -585,7 +679,7 @@ Algemene functies om somaties van `Markdown.MD` types mogelijk te maken, alsook 
 """
 
 # ╔═╡ 2d88f595-d4ae-427f-ac24-5fcef37dafb6
-function Base.:+(uc1::UC, uc2::UC)
+function Base.:+(uc1::UC, uc2::UC)::UC
 	c1, c2 = getproperty.([uc1, uc2], :beschrijving)
 	w1, w2 = getproperty.([uc1, uc2], :waarde)
 	l1, l2 = getproperty.([uc1, uc2], :limiet)
@@ -593,7 +687,7 @@ function Base.:+(uc1::UC, uc2::UC)
 end
 
 # ╔═╡ 4186bf7c-dada-447e-8e1c-7c5a695111a6
-function Base.:+(md1::Markdown.MD, md2::Markdown.MD)
+function Base.:+(md1::Markdown.MD, md2::Markdown.MD)::Markdown.MD
 	pgs1, pgs2 = md1.content, md2.content
 	if length(pgs1) == 1 && length(pgs2) == 1
 		pg1, pg2 = (pgs1, pgs2) .|> first
@@ -608,6 +702,52 @@ function Base.:+(md1::Markdown.MD, md2::Markdown.MD)
 			return Markdown.MD(Markdown.Paragraph("..."))
 		end
 	end
+end
+
+# ╔═╡ 74a300ff-0972-42e5-996e-52c98a6999c2
+function Base.:*(md1::Markdown.MD, md2::Markdown.MD)::Markdown.MD
+	pgs1, pgs2 = md1.content, md2.content
+	if length(pgs1) == 1 && length(pgs2) == 1
+		pg1, pg2 = (pgs1, pgs2) .|> first
+		tp1, tp2 = (pg1, pg2) .|> typeof
+		if all((tp1, tp2) .== Markdown.LaTeX)
+			c1, c2 = getproperty.([pg1, pg2], :formula)
+			return Markdown.MD(Markdown.LaTeX(string(c1,raw"\cdot ",c2)))
+		elseif all((tp1, tp2) .== Markdown.Paragraph)
+			c1, c2 = getproperty.([pg1, pg2], :content) .|> first
+			return Markdown.MD(Markdown.Paragraph(string(c1," ",c2)))
+		else
+			return Markdown.MD(Markdown.Paragraph("..."))
+		end
+	end
+end
+
+# ╔═╡ 1ff3a74b-1c54-4d47-b2fb-267130e4a773
+function Base.:*(scalar::Real, uc::UC)::UC
+	beschrijving = Markdown.MD(Markdown.LaTeX("$scalar"))  * uc.beschrijving
+	waarde = scalar * uc.waarde
+	return UC(beschrijving, waarde, uc.limiet)
+end
+
+# ╔═╡ cf0ad498-cbe7-404a-a265-6464460c6e5e
+function Base.:/(scalar::Real, uc::UC)::UC
+	beschrijving = Markdown.MD(Markdown.LaTeX(raw"\dfrac{1}{$scalar}"))  * uc.beschrijving
+	limiet = scalar * uc.limiet
+	return UC(beschrijving, uc.waarde, limiet)
+end
+
+# ╔═╡ 74796fc6-0b2c-4dc0-8af8-f3549986cd52
+function Base.:*(c::Constant, uc::UC)::UC
+	beschrijving = c.beschrijving  * uc.beschrijving
+	waarde = c.waarde * uc.waarde
+	return UC(beschrijving, waarde, uc.limiet)
+end
+
+# ╔═╡ 1565b3a9-bd3e-4cc6-9c3a-6cd9ff66c8bd
+function Base.:/(c::Constant, uc::UC)::UC
+	beschrijving = c.beschrijving  * uc.beschrijving
+	limiet = c.waarde * uc.limiet
+	return UC(beschrijving, uc.waarde, limiet)
 end
 
 # ╔═╡ 1d483436-9f48-41f7-b5b3-c49fb81a6824
@@ -658,6 +798,20 @@ Foldable(
 	"""
 )
 
+# ╔═╡ 255833a6-4adc-4360-8916-01d477106c26
+Foldable(
+	"Table B.3 in NBN EN 1993-1-1 Bijlage 2", 
+	md""" 
+	 $(load("assets/img/NBN EN 1993-1-1 tab B.3.png"))
+	"""
+)
+
+# ╔═╡ 26f2f31b-7d6c-4422-ac9f-5f8d84c47b86
+Foldable(
+	"Afdruk NBN B 03-003 Tabel 3",
+	md"""$(load("./assets/img/NBN B 03-003 tab 3.png"))"""
+)
+
 # ╔═╡ 512507a3-9238-441f-a5e4-b528e98ae49e
 function Base.show(io::IO, mime::MIME"text/html", fld::Foldable)
 	Base.write(io, """
@@ -672,24 +826,6 @@ function Base.show(io::IO, mime::MIME"text/html", fld::Foldable)
 			</p>
 		</summary>
 	""")
-end
-
-# ╔═╡ efcf9a17-4b36-4c0d-88c4-e597b175e0eb
-function Base.show(io::IO, mime::MIME"text/html", uc::UC)
-	afronden = t -> (d -> round(d, digits=t))
-	subs = Dict(
-		"beschrijving" => uc.beschrijving.content[1].formula, 
-		"waarde" => uc.waarde |> afronden(1),
-		"limiet" => uc.limiet |> afronden(1),
-		"uc" => (uc.waarde / uc.limiet) |> afronden(2)
-	)
-	format = raw"$\text{UC} = beschrijving = \dfrac{waarde}{limiet} = uc\rightarrow$"
-	
-	Base.write(io, """<div style="display: flex; align-items: center; justify-content: center;"><div>""")
-	Base.show(io, mime, Markdown.parse(replace(format, r"beschrijving|waarde|limiet|uc" => s -> subs[s])))
-	Base.write(io, """</div><div style="flex: 1; padding-left: 2px;">""")
-	Base.show(io, mime, uc.check)
-	Base.write(io, """</div></div>""")
 end
 
 # ╔═╡ 5f7b25aa-2fd6-44c6-95a2-94232a444061
@@ -989,11 +1125,23 @@ N_Ed = UGT.N() # kN
 # ╔═╡ 9d370e4a-5ef2-44b1-86ea-89a8ce972eaa
 UC_N = UC(md"$\dfrac{N_{Ed}}{N_{c,Rd}}$", N_Ed, N_cRd)
 
+# ╔═╡ c829e349-2092-4bda-b448-6d3970a8d1af
+TwoColumn(
+	md"Axiale druk",
+	UC_N
+)
+
 # ╔═╡ 0c044b93-5cd4-4ef9-a8e4-df729d7b8f87
 n = N_Ed / N_cRd
 
 # ╔═╡ 7c4f44c5-3060-4be4-9f46-16a20075e9d5
 UC_Nstab = UC(md"$\dfrac{N_{Ed}}{N_{b,Rd}}$", N_Ed, N_bRd)
+
+# ╔═╡ d5f61556-2204-4d3d-9981-9cbc60d601dd
+TwoColumn(
+	md"Knikstabiliteit (*Axiale druk*)",
+	UC_Nstab
+)
 
 # ╔═╡ 81060926-426e-4155-9c27-e833902d29bb
 M_Ed = abs(UGT.M(t_)) # kNm
@@ -1001,11 +1149,29 @@ M_Ed = abs(UGT.M(t_)) # kNm
 # ╔═╡ 1ce7661e-1e86-4b0e-82a2-4fa7041d43d4
 UC_Mstab = UC(md"$\dfrac{M_{Ed}}{M_{b,Rd}}$", M_Ed, M_bRd)
 
+# ╔═╡ ab2f3ce2-9169-4306-9779-bae0714f0783
+TwoColumn(
+	md"Kipstabiliteit (*Buigend moment*)",
+	UC_Mstab
+)
+
 # ╔═╡ 5456715c-bf21-40c9-b955-d300988fa569
 V_Ed = abs(UGT.V(t_)) # kN
 
 # ╔═╡ b2e9dbbf-9bee-4907-895c-aa9f886aba46
 UC_V = UC(md"$\dfrac{V_{Ed}}{V_{c,Rd}}$", V_Ed, V_plRd)
+
+# ╔═╡ 29369fad-e93e-48e0-b102-00672944936f
+TwoColumn(
+	md"Dwarskracht",
+	UC_V
+)
+
+# ╔═╡ 85e2a31f-eccf-444a-8d93-15b30011676b
+TwoColumn(
+	md"Wringing",
+	UC_V
+)
 
 # ╔═╡ 453c07c4-5392-470a-a573-fe062e0cd8ff
 ρ = V_Ed / V_plRd < 0.5 ? 0 : ((2 * V_Ed) / V_plRd - 1)^2
@@ -1025,11 +1191,20 @@ M_NRd = min(M_NyRd, M_NzRd) # Weerstand in de zwakke richting
 # ╔═╡ f7b2f221-e492-4931-a5c3-65b5b31e51f3
 UC_M = UC(md"$\dfrac{M_{Ed}}{M_{N,Rd}}$", M_Ed, M_NRd)
 
+# ╔═╡ f1ca61bb-7667-479f-85b1-3d40e43ab437
+TwoColumn(
+	md"Buigend moment",
+	UC_M
+)
+
 # ╔═╡ eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
-UC_N + UC_M + UC_V
+UC_T = UC_N + UC_M + UC_V
 
 # ╔═╡ 7fefbffc-1dbc-42fe-879e-3868db9af411
-UGT_M = UGT.M.(0:0.05:geom[:L])
+begin
+	UGT_M = UGT.M.(0:0.05:geom[:L])
+	plot(0:0.05:geom[:L], UGT_M, title="Buigend moment [kNm]", legend=false)
+end
 
 # ╔═╡ 400e257a-d9dc-422e-9eb2-f614261e71dd
 UGT_M1 = UGT_M[1]
@@ -1041,10 +1216,46 @@ UGT_M2 = UGT_M[end]
 C_my = max(0.6 + 0.4 * UGT_M2 / UGT_M1, 0.4)
 
 # ╔═╡ 506afd55-e65e-4781-b405-61f9ba935d6c
-k_yy = C_my * (1 + min((λ_ - 0.2), 0.8) * N_Ed / N_bRd) # Interactiefactor
+k_yy = Constant(
+	md"$k_{yy}$", 
+	C_my * (1 + min((λ_ - 0.2), 0.8) * N_Ed / N_bRd)
+) # Interactiefactor
 
-# ╔═╡ 2f8ae4b2-c79c-4784-884d-94afa6f2c9c9
-plt.lines(0:0.05:geom[:L], UGT_M)
+# ╔═╡ f38ffad8-65ca-41ef-afc2-ae292e2a71ce
+UC_MNstab = UC_Nstab + k_yy * UC_Mstab
+
+# ╔═╡ 9f609a14-5cc4-475c-bad9-c817d528e9dd
+TwoColumn(
+	md"Gecombineerd effect",
+	UC_MNstab
+)
+
+# ╔═╡ 4520f2ba-89a1-4416-841e-e39d11b74d85
+GGT_F = opl[opl.check .== :GGT,:] |> first
+
+# ╔═╡ 66ac48f0-6da8-4e55-884b-7ec0f17b7f51
+plot(0:0.05:geom[:L], GGT_F.v, title="Horizontale Vervorming - GGT Frequent [mm]", legend=false)
+
+# ╔═╡ 596b1a51-d779-4369-bf1c-c8737ce1ed11
+GGT_F_vmax = maximum(extrema(GGT_F.v.(0:0.05:geom[:L])) .|> abs)
+
+# ╔═╡ 4db0305a-bae5-4880-9305-011c61493499
+UC_v = UC(md"$\dfrac{v_{max}}{h_{1}\ /\ 250}$", GGT_F_vmax * 1000, geom[:L]/250 * 1000)
+
+# ╔═╡ 762b9a97-61fc-4f92-9006-9a98b26a45bf
+TwoColumn(
+	md"Uitzicht (9)",
+	UC_v
+)
+
+# ╔═╡ bddb2fa9-d572-428e-8c12-ef955309b293
+GGT_K = opl[opl.check .== :GGT_K,:] |> first
+
+# ╔═╡ bb9c8ee1-df0e-4945-98d1-9579b930f9a8
+GGT_K_vmax = maximum(extrema(GGT_K.v.(0:0.05:geom[:L])) .|> abs)
+
+# ╔═╡ f5a91bff-cfda-4ede-9a43-546152fb56d6
+plot(0:0.05:geom[:L], GGT_K.v, title="Horizontale Vervorming - GGT Karakteristiek [mm]", legend=false)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2445,6 +2656,17 @@ version = "0.9.1+5"
 # ╟─5f090cf6-bf5d-4663-860c-d694b82ca64a
 # ╟─96b36181-5dd7-4b7f-b36c-b41c297aee4b
 # ╟─6fd93b12-b898-415c-93e1-5c3c6337bd9f
+# ╟─a12b2f6b-0f6f-4891-8e49-e9c0456cb203
+# ╟─c829e349-2092-4bda-b448-6d3970a8d1af
+# ╟─f1ca61bb-7667-479f-85b1-3d40e43ab437
+# ╟─29369fad-e93e-48e0-b102-00672944936f
+# ╟─85e2a31f-eccf-444a-8d93-15b30011676b
+# ╟─fc3409d7-2873-4410-8e9d-299c4dbfd4ab
+# ╟─d5f61556-2204-4d3d-9981-9cbc60d601dd
+# ╟─ab2f3ce2-9169-4306-9779-bae0714f0783
+# ╟─9f609a14-5cc4-475c-bad9-c817d528e9dd
+# ╟─99cfd8a5-362a-48a6-9c8f-aca67c63a616
+# ╟─762b9a97-61fc-4f92-9006-9a98b26a45bf
 # ╟─479ce586-0709-42a1-aa7d-2e7d8e4c5b7b
 # ╠═2562daf7-66f5-4b9d-8b6e-9b50095d4dd3
 # ╟─2f321431-5f92-453c-bfb2-ce3c6f7f81a2
@@ -2555,8 +2777,19 @@ version = "0.9.1+5"
 # ╠═7fefbffc-1dbc-42fe-879e-3868db9af411
 # ╠═400e257a-d9dc-422e-9eb2-f614261e71dd
 # ╠═b78f6455-4aad-49b4-9460-f11ac7b2efc7
-# ╠═2f8ae4b2-c79c-4784-884d-94afa6f2c9c9
+# ╟─255833a6-4adc-4360-8916-01d477106c26
 # ╠═b0438740-c67e-4392-a278-097ce0e402d1
+# ╠═f38ffad8-65ca-41ef-afc2-ae292e2a71ce
+# ╟─d59ea3e9-e374-4e80-aee6-3c4878745f0d
+# ╟─d8003147-45a6-4b8f-960e-70bc80f8cb69
+# ╠═4520f2ba-89a1-4416-841e-e39d11b74d85
+# ╟─66ac48f0-6da8-4e55-884b-7ec0f17b7f51
+# ╠═bb9c8ee1-df0e-4945-98d1-9579b930f9a8
+# ╠═bddb2fa9-d572-428e-8c12-ef955309b293
+# ╟─f5a91bff-cfda-4ede-9a43-546152fb56d6
+# ╠═596b1a51-d779-4369-bf1c-c8737ce1ed11
+# ╟─26f2f31b-7d6c-4422-ac9f-5f8d84c47b86
+# ╟─4db0305a-bae5-4880-9305-011c61493499
 # ╟─695ecf3c-6a51-458d-b63f-8f323df46a8a
 # ╟─1e5bd62b-5327-4abb-b4c0-9df3c2a92be9
 # ╠═e8bc8487-8e7e-4e5f-a06e-193669f4cce9
@@ -2570,10 +2803,18 @@ version = "0.9.1+5"
 # ╠═01cc6e48-7e78-4c9c-968a-457857f37b00
 # ╟─47f629ad-75cd-4400-a07e-ddd22c4f94e8
 # ╠═d3b4ab06-11e2-4fd3-b994-60c6aabf5308
+# ╠═b4205158-167f-4521-a9ef-6b0d39cc9238
 # ╠═efcf9a17-4b36-4c0d-88c4-e597b175e0eb
+# ╠═6942d492-5d8b-4a0e-9824-e55318cd03c0
+# ╠═fee57389-2d06-447a-ad08-9866b7f72e4b
 # ╟─a835b337-5d25-47c2-a34c-b74beb4b62de
 # ╠═2d88f595-d4ae-427f-ac24-5fcef37dafb6
 # ╠═4186bf7c-dada-447e-8e1c-7c5a695111a6
+# ╠═74a300ff-0972-42e5-996e-52c98a6999c2
+# ╠═1ff3a74b-1c54-4d47-b2fb-267130e4a773
+# ╠═cf0ad498-cbe7-404a-a265-6464460c6e5e
+# ╠═74796fc6-0b2c-4dc0-8af8-f3549986cd52
+# ╠═1565b3a9-bd3e-4cc6-9c3a-6cd9ff66c8bd
 # ╟─1d483436-9f48-41f7-b5b3-c49fb81a6824
 # ╠═e8773634-2240-4870-aa5c-8460459178b8
 # ╠═af04ceeb-5a97-4eee-bbd7-0aa324dc8704

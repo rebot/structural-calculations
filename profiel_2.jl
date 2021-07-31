@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -18,9 +18,6 @@ using PlutoUI, ImageView, Images, Conda, PyCall, SymPy, Roots, Plots, HTTP, JSON
 
 # ╔═╡ d46d3ca7-d893-46c1-9ee7-1c88c9219a9e
 situatieschets = load("./assets/img/profiel_2.jpg")
-
-# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
-PlutoUI.TableOfContents()
 
 # ╔═╡ 2a3d44ad-9ec2-4c21-8825-dbafb127f727
 md"## Indeling
@@ -47,6 +44,9 @@ md"""
 
 # ╔═╡ 883ced2c-2403-4c81-8d80-8f99536ffbe8
 naam = "Profiel 2"
+
+# ╔═╡ 7232ab53-f2df-45e5-bf9b-f3997de5d3f2
+PlutoUI.TableOfContents(title=string("Berekening ", naam), depth=4)
 
 # ╔═╡ a81fbf3e-f5c7-41c7-a71e-68f8a9589b45
 md"Naam van het profiel; $\text{naam}$ = $naam"
@@ -182,10 +182,13 @@ md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wo
 # ╔═╡ 9369fece-8b5e-4817-aee3-3476d43e1c2c
 combinaties = DataFrame([
 	(check=:GGT, naam="p1", formule="g1 + gp + 0.5 * q1_vloer"),
+	(check=:GGT_K, naam="p1", formule="g1 + gp + q1_vloer + 0.5 * q1_sneeuw"),
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
+	(check=:GGT_K, naam="p2", formule="g2 + gp + q2_vloer + 0.5 * q2_sneeuw"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
 	(check=:GGT, naam="p3", formule="g3 + gp + 0.5 * q3_vloer"),
+	(check=:GGT_K, naam="p3", formule="g3 + gp + q3_vloer + 0.5 * q3_sneeuw"),
 	(check=:UGT, naam="p3", formule="1.35 * (g3 + gp) + 1.5 * (q3_vloer + 0.5 * q3_sneeuw)"),
 ])
 
