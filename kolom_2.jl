@@ -20,7 +20,7 @@ using PlutoUI, ImageView, Images, Plots, SymPy, Luxor, SQLite, DataFrames, Under
 using UUIDs
 
 # ╔═╡ 5f090cf6-bf5d-4663-860c-d694b82ca64a
-situatieschets = load("./assets/img/profiel_2.jpg")
+situatieschets = load("./assets/img/profiel_3.jpg")
 
 # ╔═╡ 6fd93b12-b898-415c-93e1-5c3c6337bd9f
 md"""
@@ -69,7 +69,7 @@ De geometrie is af te lezen op de *situatieschets*.
 
 # ╔═╡ 2562daf7-66f5-4b9d-8b6e-9b50095d4dd3
 geom = (
-	L = 2.9, # m - verdiepingshoogte = 2.7m - 0.22 voor het profiel + 0.38cm uitgr.
+	L = 2.6, # m - verdiepingshoogte = 2.7m - 0.18 voor het profiel + 0.08cm uitgraving.
 )
 
 # ╔═╡ 2f321431-5f92-453c-bfb2-ce3c6f7f81a2
@@ -79,16 +79,16 @@ Profieldoorsnede
 
 # ╔═╡ 81d77b92-3499-451d-b485-b8378cdbf611
 kolom = (
-	naam = "SHS 140/5",
+	naam = "SHS 90/5",
 	kwaliteit = "S235",
-	beschrijving = "Kolom 1",
+	beschrijving = "Kolom 2",
 	knikkromme = :a
 )
 
 # ╔═╡ bf7ab900-ec7d-11eb-1a03-b5c7103e6e4c
 md"""
 # Berekening $(kolom[:beschrijving]) - $(kolom[:naam])
-Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1** en **Profiel 2** ondersteund en staat op de hoek van de kelder.
+Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 2** ondersteunt en staat op de rand van de kelderwand. Geen krachten van het dak worden afgeleidt naar deze kolom.
 """
 
 # ╔═╡ 96b36181-5dd7-4b7f-b36c-b41c297aee4b
@@ -129,15 +129,9 @@ Overzicht van de aangrijpende belastingen
 
 # ╔═╡ 6967230f-8e86-48d7-affb-8f537f50b053
 gevallen = DataFrame([
-	(naam="GGT1", waarde=59.874, beschrijving="Afdracht profiel 1 - lasten GGT Frequent"),
-	(naam="GGT2", waarde=128.005, beschrijving="Afdracht profiel 2 - lasten GGT Frequent"),
-	(naam="GGT3", waarde=13.248, beschrijving="Afdracht profiel 3 - lasten GGT Frequent"),
-	(naam="GGT_K1", waarde=72.596, beschrijving="Afdracht profiel 1 - lasten GGT Karakteristiek"),
-	(naam="GGT_K2", waarde=157.411, beschrijving="Afdracht profiel 2 - lasten GGT Karakteristiek"),
-	(naam="GGT_K3", waarde=15.274, beschrijving="Afdracht profiel 3 - lasten GGT Karakteristiek"),
-	(naam="UGT1", waarde=101.412, beschrijving="Afdracht profiel 1 - lasten UGT"),
-	(naam="UGT2", waarde=220.561, beschrijving="Afdracht profiel 2 - lasten UGT"),
-	(naam="UGT3", waarde=21.227, beschrijving="Afdracht profiel 3 - lasten UGT")
+	(naam="GGT1", waarde=67.3065, beschrijving="Afdracht profiel 3 - lasten GGT Frequent"),
+	(naam="GGT_K1", waarde=70.7605, beschrijving="Afdracht profiel 3 - lasten GGT Karakteristiek"),
+	(naam="UGT1", waarde=96.5629, beschrijving="Afdracht profiel 3 - lasten UGT"),
 ])
 
 # ╔═╡ 1402febf-ba8c-475a-8f23-a916d8d9815b
@@ -146,9 +140,9 @@ replacer = (g = gevallen; Regex(join(g.naam, "|")) => s -> g.waarde[g.naam .== s
 # ╔═╡ 650a4e73-0ff4-4ab2-be22-70143654aa57
 combinaties = select!(
 	DataFrame([
-		(check=:GGT, naam="F", formule="GGT1 + GGT2 + GGT3"),
-		(check=:GGT_K, naam="F", formule="GGT_K1 + GGT_K2 + GGT_K3"),
-		(check=:UGT, naam="F", formule="UGT1 + UGT2 + UGT3")
+		(check=:GGT, naam="F", formule="GGT1"),
+		(check=:GGT_K, naam="F", formule="GGT_K1"),
+		(check=:UGT, naam="F", formule="UGT1")
 	]), 
 	:, 
 	:formule => 
@@ -396,7 +390,7 @@ md"""
 Bepalen *reductiefactor* $\chi_{LT}$ voor **kip** waarbij $_{LT}$ staat voor *lateral torsional* buckling
 """
 
-# ╔═╡ bbf8fd14-3176-4966-8060-7d9a2602728d
+# ╔═╡ f827bafe-a029-436d-b2c1-661da4d810f2
 md"""
 Eenvoudige benadering $\lambda_{LT}$ volgens *NBN EN 1993-1-1 ANB - Bijlage H*.
 """
@@ -404,75 +398,10 @@ Eenvoudige benadering $\lambda_{LT}$ volgens *NBN EN 1993-1-1 ANB - Bijlage H*.
 # ╔═╡ 949aa8ef-33f9-455d-9471-de202e2a1fc6
 α_LT = getproperty(imperfectie, :a) # imperfectiefactor
 
-# ╔═╡ 9aa171b9-f90c-4951-903d-00862794d1f0
+# ╔═╡ 529b20b8-26d6-4c6d-87be-74dc0f94ff09
 md"""
 Berekening $M_{cr}$ volgens *NBN EN 1993-1-1 ANB - Bijlage E*.
-
-Dubbelsymmetrische dwarsdoorsnede (§3 *Bijlage E*)
-
-$$M_{cr}=C_{1}\dfrac{\pi^2EI_{z}}{\left(k_{z}L\right)^2}\left\{\sqrt{\left[\left(\dfrac{k_z}{k_{\omega}}\right)^2\dfrac{I_{\omega}}{I_z}+\dfrac{(k_zL)^2GI_T}{\pi^2EI_z}+(C_2z_g)^2\right]}-C_2z_g\right\}$$
 """
-
-# ╔═╡ 6cb6f033-c5ef-4852-bb66-3b80c08501d1
-md"""
-!!! warning "Eenheden eigenschappen"
-	Als brondbestand voor de liggers, werd een overzichtstabel van Areloc Mittal gehanteerd. Als bronbestand voor de kolommen, werd een lijst van [eurocodeapplied](www.eurocodeapplied.com) gehanteerd. Controleer of er geen vergroting van de parameters moet toegepast worden.
-"""
-
-# ╔═╡ b3128d17-e7a6-4cd1-b9a3-7c2e85e9c1ed
-L_steun = geom[:L] # Lengte van de ligger tussen punten met zijdelingse steun
-
-# ╔═╡ daa7b994-81a8-4ddd-93b3-65298c9f917a
-# Effectieve lengtefactor k_z = betrekking tot einddraaiing in het vlak
-#	- 0.5 volledig ingeklemd 
-# 	- 0.7 één einde ingeklemd, één zijde vrije
-#	- 1.0 volledig gebrek aan inklemming
-k_z = 0.7 # Onderaan ingeklemd
-
-# ╔═╡ 6cb6bdee-5fac-42b6-a55c-35172ce8c8eb
-# Effectieve lengtefactor k_ω = betrekking tot welving van het uiteinde
-#	- 0.5 volledig ingeklemd 
-# 	- 0.7 één einde ingeklemd, één zijde vrije
-#	- 1.0 volledig gebrek aan inklemming
-k_ω = 1.0 # Kolom kan aan uiteindes niet welven door druk
-
-# ╔═╡ 04316e68-424a-4ae3-8d09-f54a755693da
-z_g = 0 # z_a - z_s = verschil belastingspunt tot het zwaartepunt
-
-# ╔═╡ a17412e3-6377-426e-ae0c-c32ce2714aef
-md"""
-Berekening van de factoren $C_1$, $C_2$ en $C_3$ volgens de tabellen *Tabel E.1 ANB* en *Tabel E.2 ANB* 
-"""
-
-# ╔═╡ 4b404a8d-7e1f-4fa5-98b8-f86251b720b6
-Ψ_f = 0 # Voor dubbelsymmetrische doorsneden
-
-# ╔═╡ 914aa30b-7a6f-4ca7-a5d0-55dd57deb91e
-# Indien k_z = 1.0, volledig gebrek aan inklemming
-# Benaderde waarde van C_1 via onderstaande forumule
-# C1 = min(1.77 - 1.04 * Ψ + 0.27 * Ψ^2, 2.60)
-
-# ╔═╡ 1d397003-77d2-48eb-aa9a-f21c306a203e
-md"""
-Indien het momentverloop is ontstaan uit het **gecombineerd effect** van zowel belastingen door **eindmomenten** (inklemming) als door **lijn- en puntbelastingen**, dan worden de figuren *E.3 ANB* tot *E.10 ANB* gehanteerd.
-
-$(load("./assets/img/NBN EN 1993-1-1 ANB fig E.2.png"))
-
-Hierbij worden volgende parameters berekend, waarbij $$M$$ voor het maximale **eindmoment** staat:
-
-$$\mu = \dfrac{q\ L^2}{8\ M} \text{(a)  of  } \dfrac{F\ L}{4\ M} \text{(b)}$$
-"""
-
-# ╔═╡ f1033e15-2736-40a9-8403-de14f9076c1a
-md"""
-In geval van de berekening van de kolommen, nemen we altijd een **positieve** waarde aan van $\mu$, gezien dit leidt tot de kleinste waardes voor de constantes $C_1$ tot $C_3$, immers zijn de buigende momenten afkomstig van geometrische imperfecties en kunnen die elkaars effecten versterken. 
-"""
-
-# ╔═╡ ebd5559c-ca01-436e-a6ac-c333349a376f
-C_1 = 1.6 # Zie volgende figuur
-
-# ╔═╡ a02a69c2-5250-476f-801b-f62443e42615
-C_2 = 0.18 # Zie volgende figuur
 
 # ╔═╡ e09a6e50-b887-489c-9118-a2817aa08513
 md"""
@@ -496,103 +425,7 @@ Staven die aan gecombineerde buiging en druk zijn onderworpen behoren te voldoen
 
 $$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+k_{yy}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\dfrac{\chi_{LT}\ M_{y,Rk}}{\gamma_{M1}}} \leq 1$$
 
-Merk op dat bovenstaande vergelijking een vereenvoudiging is van formule 6.62 en 6.63 uit *NBN EN 1993-1-1* gezien voor een **SHS** profiel de sterkte in beide richtingen gelijk is. De parameter $k_{yy}$ is een interactiefactor, berekend volgens **bijlage A** (Alternatieve methode 1 normatief). De bijlage is herschreven en toegevoegd als **Bijlage D** in *NBN EN 1993-1-1 ANB*. De parameter $\Delta M_{y,Ed}$ voor een profiel van **klasse 1 tot 3** is gelijk aan $0$
-"""
-
-# ╔═╡ a1575d01-f628-492d-9a10-2bd9ad306bb7
-md"""
-###### Stap **1** - Onderscheid staven gevoelig of niet aan torsie
-Volgens *NBN EN 1993-1-1 ANB Bijlage D*
-"""
-
-# ╔═╡ baec8eb3-f117-47fb-b05d-92308298f1a3
-md"""
-Is de staaf **torsie gevoelig**?
-"""
-
-# ╔═╡ 327c6862-7f36-49b8-89f0-ed7fcf36cc99
-md"""
-Berekening **kritieke elastische kracht** met betrekking tot de **torsieknikstabiliteit** $N_{cr,TF}$ en **Euleriaanse elastische knikkracht** $N_{cr,z}$ om de z-as volgens *NBN EN 1993-1-1 ANB Bijlage F*. Merk op, onderstaande berekening is enkel geldig voor een prismatische doorsnede waarbij het zwaartepunt van de doorsnede samenvalt met het torsiecentrum. In onderstaande berekening wordt voor gesloten kokerprofielen de welvingconstante gelijk gesteld aan $0$.
-"""
-
-# ╔═╡ 52172a41-72a2-4a8d-baed-b291d68adb3f
-md"""
-De relevante kniklengte $L_{cr}$ is gelijk aan **$2\times$ de lengte van de kolom** omdat deze onderaan als ingeklemd wordt beschouwd, en bovenaan als vrij. Dit is een conservatieve benadering.
-"""
-
-# ╔═╡ 83f62f93-d0a0-4e94-841c-458ce2c1cd65
-L_cr
-
-# ╔═╡ 2850392f-fab1-40fd-8487-91216a8fdd76
-md"""
-De factor $C_1$ hangt af van de **belasting** en de **randvoorwaarden** van de **oplegging** en is bepaald volgens *NBN EN 1993-1-1 ANB Bijlage E* 
-"""
-
-# ╔═╡ fba37538-ce55-48e4-979a-e3cf9a6be6cd
-md"""
-###### Stap **2.a** - Staaf niet gevoelig voor torsie
-Volgens *NBN EN 1993-1-1 ANB Bijlage D*. 
-
-We hernemen formules (6.61) en (6.62) uit *NBN EN 1993-1-1* en passen hier alle randvoorwaardes op toe. Prismatische dubbelsymmetrische koker met sterkte in beide assen gelijk.
-
-$$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+\mu_y\left[C_{my}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}\dfrac{M_{y,Rk}}{\gamma_{M1}}}\right] \leq 1$$
-"""
-
-# ╔═╡ b644b63e-352e-4f55-9d03-03d6cb96ec3d
-md"""
-Bovenstaande wordt opgesplitst in de eenheidscontrole voor **enkel druk** en het aangrijpen van **enkel** een **buigend moment**, de overige waardes worden samengevoegd tot een **interactiefactor** $k_{yy}$ uit de **Alternatieve methode 2**, we verwijzen dan ook verder naar $k_{yy}$ als naam voor deze term.
-
-$$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+\dfrac{\mu_y\ C_{my}\ \chi_{LT}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\dfrac{\chi_{LT}M_{y,Rk}}{\gamma_{M1}}} \leq 1$$
-"""
-
-# ╔═╡ 2430fca4-d88f-4a3e-9129-19f163e7d83a
-md"""
-De waarde voor de factor $C_{my}$ wordt afgeleid van *Tabel D.1 ANB*. Voor een staaf niet gevoelig voor torstie is $C_{my} = C_{my,0}$. 
-"""
-
-# ╔═╡ 906c97c1-136b-4df9-929d-7db6c289cd5b
-md"""
-Interactiefactor $C_{yy}$ die een maat is voor de hoeveelheid plasticiteit in de staafdoorsnede bij bezwijken.
-
-$$C_{yy} = 1 + (w_y-1)\left[\left(2 - \dfrac{1.6}{w_y}C_{my}^2\bar\lambda_{max} - \dfrac{1.6}{w_y}C_{my}^2\bar\lambda_{max}^2\right)n_{pl}\right]\geq\dfrac{W_{el,y}}{W_{pl,y}}$$
-"""
-
-# ╔═╡ 83f412fa-7c1a-4484-9bbf-bc0287cbe5f7
-md"""
-###### Stap **2.b** - Staaf gevoelig voor torsie
-Volgens *NBN EN 1993-1-1 ANB Bijlage D*
-
-We hernemen formules (6.61) en (6.62) uit *NBN EN 1993-1-1* en passen hier alle randvoorwaardes op toe. Prismatische dubbelsymmetrische koker met sterkte in beide assen gelijk.
-
-$$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+\mu_y\left[\dfrac{C_{mLT}\ C_{my}}{\chi_{LT}}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}\dfrac{M_{y,Rk}}{\gamma_{M1}}}\right] \leq 1$$
-"""
-
-# ╔═╡ 0265c5cf-f768-45c4-aad8-f399e23d3703
-md"""
-Bovenstaande wordt opgesplitst in de eenheidscontrole voor **enkel druk** en het aangrijpen van **enkel** een **buigend moment**, de overige waardes worden samengevoegd tot een **interactiefactor** $k_{yy}$ uit de **Alternatieve methode 2**, we verwijzen dan ook verder naar $k_{yy}$ als naam voor deze term.
-
-$$\dfrac{N_{Ed}}{\dfrac{\chi_y\ N_{Rk}}{\gamma_{M1}}}+\dfrac{\mu_y\ C_{mLT}\ C_{my}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}}\ \dfrac{M_{y,Ed}+\Delta M_{y,Ed}}{\dfrac{\chi_{LT}M_{y,Rk}}{\gamma_{M1}}} \leq 1$$
-"""
-
-# ╔═╡ 63523b55-c791-42e5-b3b2-9d03b11e7e2c
-md"""
-Interactiefactor $C_{yy}$ die een maat is voor de hoeveelheid plasticiteit in de staafdoorsnede bij bezwijken.
-
-$$C_{yy} = 1 + (w_y-1)\left[\left(2 - \dfrac{1.6}{w_y}C_{my}^2\bar\lambda_{max} - \dfrac{1.6}{w_y}C_{my}^2\bar\lambda_{max}^2\right)n_{pl}-b_{LT}\right]\geq\dfrac{W_{el,y}}{W_{pl,y}}$$
-"""
-
-# ╔═╡ 3944d762-8c63-4188-9aef-e26236474fca
-b_LT = 0 # Maar buiging in 1 richting
-
-# ╔═╡ 88259ae8-a88d-48f0-9660-96a4b00cde35
-md"""
-De factor $C_{mLT}$ dekt de invloed van de normaalkracht en van de doorsnedevorm op de kipweerstand.
-"""
-
-# ╔═╡ 832e20b0-2106-4c09-8a1c-cbf4faa9ea52
-md"""
-###### Unity check
-Onderstaande vorm aangehouden omdat dit in overeenstemming is met *Alternatieve methode 2* opgenomen in *NBN EN 1993-1-1 Bijlage B*. De controle zelf is wel uitgevoerd volgens *Alternatieve methode 1* omdat deze normatief is in België.
+Merk op dat bovenstaande vergelijking een vereenvoudiging is van formule 6.62 en 6.63 uit *NBN EN 1993-1-1* gezien voor een **SHS** profiel de sterkte in beide richtingen gelijk is. De parameter $k_{yy}$ is een interactiefactor, berekend volgens **bijlage B**. De parameter $\Delta M_{y,Ed}$ voor een profiel van **klasse 1 tot 3** is gelijk aan $0$
 """
 
 # ╔═╡ d59ea3e9-e374-4e80-aee6-3c4878745f0d
@@ -718,7 +551,7 @@ a_f = min((eig.A - 2 * eig.b * eig.t) / eig.A, 0.5) # Gewalst buisprofiel h=b
 V_plRd = eig.Av * f_yk / γ_M0 / 1000 # kN
 
 # ╔═╡ 23e3d7a4-6896-4249-84d9-5d9da80019f3
-N_cr = π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3) / L_cr ^2 # kN - Eulerknik
+N_cr = π ^ 2 * (eig.I * E * 10^-3) / L_cr ^2 # kN - Eulerknik
 
 # ╔═╡ 745fb05d-67b2-499f-922d-54a325dcd648
 λ_ = sqrt( eig.A * f_yk / N_cr / 1000 ) # rel. slankheid - klasse 1, 2 en 3 doorsneden
@@ -732,15 +565,8 @@ N_cr = π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3) / L_cr ^2 # kN - Eul
 # ╔═╡ 63acc98a-a2f9-441f-8b45-bfda5ebeec6c
 N_bRd = χ_ * eig.A * f_yk / γ_M1 / 1000 # kN
 
-# ╔═╡ 465ba3c5-4346-4d8e-8f0d-760096e5f628
-λ_max = try max(λ_y, λ_z) catch; λ_ end
-
-# ╔═╡ 9e22f1c7-451b-4d72-a844-c2be4da481d5
-N_crz = N_cr
-
 # ╔═╡ aea467d4-6f7c-46fa-a8c2-d26dbf063892
-#M_cr = eig.Wpl * f_yk / 1000 # kNm - Kritisch moment; SHS niet kip gevoelig
-M_cr = C_1 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * ( sqrt((k_z / k_ω)^2 * (try eig.Iw * 103 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3) + (C_2 * z_g)^2) - C_2 * z_g)
+M_cr = eig.Wpl * f_yk / 1000 # kNm - Kritisch moment; SHS niet kip gevoelig
 
 # ╔═╡ b83c760f-4caf-4fd2-860b-837a10c2c3ff
 λ_LT = sqrt( (eig.Wpl * f_yk) / M_cr / 1000 ) # relatieve slankheid
@@ -753,24 +579,6 @@ M_cr = C_1 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_s
 
 # ╔═╡ ae2ff552-dd10-4ee0-bc2d-beaea1042dcc
 M_bRd = χ_LT * eig.Wpl * 10^3 * f_yk / γ_M1 / 10^6 # kNm 
-
-# ╔═╡ 5e620242-9ea3-4d4c-98ea-6712d4a10d60
-M_cr0 = 1.03 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * sqrt((k_z / k_ω)^2 * (try eig.Iw * 103 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3))
-
-# ╔═╡ d51b0bf5-14c7-403b-a825-f0c883a6cacb
-λ_LT0 = min(sqrt(eig.Wpl * f_yk / M_cr0 / 1000), 0.4) # §6.3.2.3 uit NBN EN 1993-1-1
-
-# ╔═╡ 53295d8a-53a0-4586-94ea-91a459ed8039
-r_0 = try sqrt((eig.Iy + eig.Iz) * 10^6 / eig.A) catch; sqrt((2 * eig.I) * 10^6 / eig.A) end
-
-# ╔═╡ 87b3c60b-a677-4412-a239-4881a3a7bd61
-N_crTF = 1 / (r_0 ^ 2) * (G * eig.IT * 10^3) / 1000 # kN
-
-# ╔═╡ 7a14e675-594a-47b4-b9f4-b20ddc5ab515
-w_y = min(eig.Wpl / eig.Wel, 1.5)
-
-# ╔═╡ dd1f1b74-9bfa-47f7-a1f5-f1a56c03f787
-a_LT = 1 - eig.IT  / ((try eig.Iy catch; eig.I end) * 1000)
 
 # ╔═╡ 7f3a6986-dfab-4e82-8eda-1a0bd72b47bd
 md"""
@@ -994,34 +802,12 @@ Foldable(
 	"""
 )
 
-# ╔═╡ d11df71d-7383-498c-9e69-22af54e9d809
+# ╔═╡ 255833a6-4adc-4360-8916-01d477106c26
 Foldable(
-	"Tabel E.1 volgens NBN EN 1993-1-1 ANB - Belasting door eindmomenten",
-	md"""$(load("./assets/img/NBN EN 1993-1-1 ANB tab E.1.png"))"""
-)
-
-# ╔═╡ 055cb041-c79a-42a5-a6b6-801dd7135841
-Foldable(
-	"Tabel E.2 volgens NBN EN 1993-1-1 ANB - Belasting in dwarsrichting",
-	md"""$(load("./assets/img/NBN EN 1993-1-1 ANB tab E.2.png"))"""
-)
-
-# ╔═╡ 4fc9d31c-83d7-463f-b64d-3c232ba71e9a
-Foldable(
-	"Figuur E.3 volgens NBN EN 1993-1-1 ANB - μ > 0",
-	md"""$(load("./assets/img/NBN EN 1993-1-1 ANB fig E.3.png"))"""
-)
-
-# ╔═╡ 4329aa2d-f932-43e3-a6e5-c6c0bf09a0c9
-Foldable(
-	"Figuur E.5 volgens NBN EN 1993-1-1 ANB - μ > 0",
-	md"""$(load("./assets/img/NBN EN 1993-1-1 ANB fig E.5.png"))"""
-)
-
-# ╔═╡ c68d5652-0220-47d5-b92d-06b1f8c25e2e
-Foldable(
-	"Tabel D.5 volgens NBN EN 1993-1-1 ANB",
-	md"""$(load("./assets/img/NBN EN 1993-1-1 ANB tab D.1.png"))"""
+	"Table B.3 in NBN EN 1993-1-1 Bijlage 2", 
+	md""" 
+	 $(load("assets/img/NBN EN 1993-1-1 tab B.3.png"))
+	"""
 )
 
 # ╔═╡ 26f2f31b-7d6c-4422-ac9f-5f8d84c47b86
@@ -1335,7 +1121,7 @@ De kolom **$(kolom[:beschrijving])** van het type **$(kolom[:naam])** in staalkw
 """
 
 # ╔═╡ 8626a190-bf29-454c-94f2-09924de6429d
-UGT = opl[opl.check .== :UGT, [:N, :V, :M, :v]] |> first
+UGT = opl[opl.check .== :UGT, [:N, :V, :M]] |> first
 
 # ╔═╡ fee38bf5-df08-4f53-b8e3-b340ddb105b1
 N_Ed = UGT.N() # kN
@@ -1361,25 +1147,6 @@ TwoColumn(
 	UC_Nstab
 )
 
-# ╔═╡ 73d41021-f9d3-4fa6-9b4f-9822ebf6e7a9
-torsie_gevoelig = begin
-	if eig.IT > eig.I * 1000
-		false # Niet gevoelig voor vervorming door torsie
-	else
-		if λ_LT0 <= 0.2 * sqrt(C_1) * ((1 - N_Ed / N_crz) * (1 - N_Ed / N_crTF))^(1/4) 
-			false # Niet gevoelig voor vervorming door torsie
-		else
-			true # Gevoelig voor vervorming door torsie
-		end
-	end
-end
-
-# ╔═╡ 39fb7d5c-529f-4e25-95cd-46394b84cb8c
-μ_y = (1 - N_Ed / N_cr ) / (1 - χ_ * N_Ed / N_cr )
-
-# ╔═╡ ff42c12d-3a2d-4e62-9481-1415f7a88647
-n_pl = N_Ed / N_cRd / γ_M1
-
 # ╔═╡ 81060926-426e-4155-9c27-e833902d29bb
 M_Ed = abs(UGT.M(t_)) # kNm
 
@@ -1391,9 +1158,6 @@ TwoColumn(
 	md"Kipstabiliteit (*Buigend moment*)",
 	UC_Mstab
 )
-
-# ╔═╡ c0270e0b-0f65-43b5-b2d0-e7a5483fa699
-ε_y = M_Ed / N_Ed * eig.A / eig.Wel # Voor klasse 1, 2 of 3
 
 # ╔═╡ 5456715c-bf21-40c9-b955-d300988fa569
 V_Ed = abs(UGT.V(t_)) # kN
@@ -1440,67 +1204,35 @@ TwoColumn(
 # ╔═╡ eeaba5bd-917d-45a6-8f3e-e3a4750e7d1d
 UC_T = UC_N + UC_M + UC_V
 
-# ╔═╡ afbafbc3-7112-4b2e-afed-7f71756f2061
+# ╔═╡ 7fefbffc-1dbc-42fe-879e-3868db9af411
 begin
 	UGT_M = UGT.M.(0:0.05:geom[:L])
-	UGT_Mmax, UGT_M1, UGT_M2 = maximum(UGT_M), UGT_M[1], UGT_M[end]
-	# Ψ is de verhouding tussen de eindmomenten, M is het max eindmoment
-	Ψ = abs(UGT_M1) > abs(UGT_M2) ? UGT_M2 / UGT_M1 : UGT_M1 / UGT_M2
 	plot(0:0.05:geom[:L], UGT_M, title="Buigend moment [kNm]", legend=false)
 end
 
-# ╔═╡ 6305983e-e603-448a-9777-5c0f52333d48
-md"""
-De verhouding tussen de eindmomenten $\psi$ is gelijk aan $(round(Ψ, digits=3)).
+# ╔═╡ 400e257a-d9dc-422e-9eb2-f614261e71dd
+UGT_M1 = UGT_M[1]
 
-Lees de waardes van $C_1$, $C_2$ en $C_3$ af op onderstaande grafieken indien afkomstig uit zuiver **eindmomenten** of **krachten** (lijn-/puntbelasting) in de dwarsrichting.  
-"""
+# ╔═╡ b0438740-c67e-4392-a278-097ce0e402d1
+C_my = 0.95 + 0.05 * UGT_M1 / UGT_M1 # max(0.6 + 0.4 * UGT_M2 / UGT_M1, 0.4)
 
-# ╔═╡ 121ee9d6-912a-4860-a0e3-a403ee21bb23
-μ = (UGT_M[div(end,2)] - (UGT_M1 + UGT_M2) / 2) / maximum(abs.([UGT_M1, UGT_M2]))
-
-# ╔═╡ e20f3246-17d9-48e3-b812-31c43ea00ae6
-md"""
-!!! danger "Herevalueer parameters"
-	Bij een wijziging van de belastingen dienen de parameters $C_1$ en $C_2$ opnieuw geëvalueerd worden
-Bepaal de coëfficiënten voor $\mu$ = $(round(μ, digits=3)) en $$\psi$$ = $(round(Ψ, digits=3))
-"""
-
-# ╔═╡ ad1824f7-a52d-4eae-a6fc-c7c04ccb00b0
-C_my0 = 1 + ( π ^ 2 * E * (try eig.Iy catch; eig.I end) * 10^(-3) * maximum(UGT.v.(0:0.05:geom[:L])) / (geom[:L]^2 * UGT_Mmax) - 1 ) * N_Ed / N_cr
-
-# ╔═╡ 4df4ef08-ba83-48f0-b410-1bff7ed471ad
-C_yy0 = max(1 + (w_y - 1) * ((2 - (1.6 / w_y * C_my0 ^ 2) * (λ_max + λ_max ^ 2)) * n_pl), eig.Wel / eig.Wpl)
-
-# ╔═╡ d60661ba-1c1b-4daf-8ae6-df1ebb666f35
-k_yy_a = Constant(
-	md"$\dfrac{\mu_y\ C_{my}\ \chi_{LT}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}}$",
-	(μ_y * C_my0 * χ_LT) / ((1 - N_Ed / N_cr) * C_yy0)
-) 
-
-# ╔═╡ 79ff10e9-0573-44c4-8141-560e84e5978c
-C_my = C_my0 + (1 - C_my0) * (sqrt(ε_y) * a_LT) / (1 + sqrt(ε_y) * a_LT)
-
-# ╔═╡ dbdb09f8-80ce-48c0-8c06-57e0d70bf0fa
-C_yy = max(1 + (w_y - 1) * ((2 - (1.6 / w_y * C_my ^ 2) * (λ_max + λ_max ^ 2)) * n_pl - b_LT), eig.Wel / eig.Wpl)
-
-# ╔═╡ cd088296-e6e4-445e-8600-5ebcb5ec6b88
-C_mLT = C_my ^ 2 * a_LT / sqrt((1 - N_Ed / N_cr) * (1 - N_Ed / N_crTF))
-
-# ╔═╡ fb473e24-e6ee-4835-871d-e33210829d5e
-k_yy_b = Constant(
-	md"$\dfrac{\mu_y\ C_{mLT}\ C_{my}}{\left(1-\dfrac{N_{Ed}}{N_{cr,y}}\right)C_{yy}}$",
-	(μ_y * C_mLT * C_my) / ((1 - N_Ed / N_cr) * C_yy)
-) 
+# ╔═╡ 506afd55-e65e-4781-b405-61f9ba935d6c
+k_yy = Constant(
+	md"$k_{yy}$", 
+	C_my * (1 + min((λ_ - 0.2), 0.8) * N_Ed / N_bRd)
+) # Interactiefactor
 
 # ╔═╡ f38ffad8-65ca-41ef-afc2-ae292e2a71ce
-UC_MNstab = torsie_gevoelig ? UC_Nstab + k_yy_b * UC_Mstab : UC_Nstab + k_yy_a * UC_Mstab 
+UC_MNstab = UC_Nstab + k_yy * UC_Mstab
 
 # ╔═╡ 9f609a14-5cc4-475c-bad9-c817d528e9dd
 TwoColumn(
 	md"Gecombineerd effect",
 	UC_MNstab
 )
+
+# ╔═╡ b78f6455-4aad-49b4-9460-f11ac7b2efc7
+UGT_M2 = UGT_M[end]
 
 # ╔═╡ 4520f2ba-89a1-4416-841e-e39d11b74d85
 GGT_F = opl[opl.check .== :GGT,:] |> first
@@ -3038,71 +2770,21 @@ version = "0.9.1+5"
 # ╟─3c273c59-cd0b-405b-835b-7ed1d910701d
 # ╠═d98d815e-9fba-45e9-b0a2-6c89f233cc8d
 # ╠═f5c651f5-de5f-4388-83b4-0b0b317b10a4
-# ╟─bbf8fd14-3176-4966-8060-7d9a2602728d
+# ╟─f827bafe-a029-436d-b2c1-661da4d810f2
 # ╠═b83c760f-4caf-4fd2-860b-837a10c2c3ff
 # ╠═949aa8ef-33f9-455d-9471-de202e2a1fc6
-# ╟─9aa171b9-f90c-4951-903d-00862794d1f0
-# ╟─6cb6f033-c5ef-4852-bb66-3b80c08501d1
+# ╟─529b20b8-26d6-4c6d-87be-74dc0f94ff09
 # ╠═aea467d4-6f7c-46fa-a8c2-d26dbf063892
-# ╠═b3128d17-e7a6-4cd1-b9a3-7c2e85e9c1ed
-# ╠═daa7b994-81a8-4ddd-93b3-65298c9f917a
-# ╠═6cb6bdee-5fac-42b6-a55c-35172ce8c8eb
-# ╠═04316e68-424a-4ae3-8d09-f54a755693da
-# ╟─a17412e3-6377-426e-ae0c-c32ce2714aef
-# ╠═afbafbc3-7112-4b2e-afed-7f71756f2061
-# ╠═4b404a8d-7e1f-4fa5-98b8-f86251b720b6
-# ╟─6305983e-e603-448a-9777-5c0f52333d48
-# ╠═914aa30b-7a6f-4ca7-a5d0-55dd57deb91e
-# ╟─d11df71d-7383-498c-9e69-22af54e9d809
-# ╟─055cb041-c79a-42a5-a6b6-801dd7135841
-# ╟─1d397003-77d2-48eb-aa9a-f21c306a203e
-# ╠═121ee9d6-912a-4860-a0e3-a403ee21bb23
-# ╟─f1033e15-2736-40a9-8403-de14f9076c1a
-# ╟─e20f3246-17d9-48e3-b812-31c43ea00ae6
-# ╠═ebd5559c-ca01-436e-a6ac-c333349a376f
-# ╟─4fc9d31c-83d7-463f-b64d-3c232ba71e9a
-# ╠═a02a69c2-5250-476f-801b-f62443e42615
-# ╟─4329aa2d-f932-43e3-a6e5-c6c0bf09a0c9
 # ╟─e09a6e50-b887-489c-9118-a2817aa08513
 # ╟─860434ef-648c-4456-aa8c-63fb473f8682
 # ╟─1ce7661e-1e86-4b0e-82a2-4fa7041d43d4
 # ╟─e5d3d66d-3975-46ca-80f8-7f02953ff56a
-# ╟─a1575d01-f628-492d-9a10-2bd9ad306bb7
-# ╟─baec8eb3-f117-47fb-b05d-92308298f1a3
-# ╠═73d41021-f9d3-4fa6-9b4f-9822ebf6e7a9
-# ╠═d51b0bf5-14c7-403b-a825-f0c883a6cacb
-# ╠═5e620242-9ea3-4d4c-98ea-6712d4a10d60
-# ╟─327c6862-7f36-49b8-89f0-ed7fcf36cc99
-# ╠═87b3c60b-a677-4412-a239-4881a3a7bd61
-# ╠═53295d8a-53a0-4586-94ea-91a459ed8039
-# ╟─52172a41-72a2-4a8d-baed-b291d68adb3f
-# ╠═83f62f93-d0a0-4e94-841c-458ce2c1cd65
-# ╠═9e22f1c7-451b-4d72-a844-c2be4da481d5
-# ╟─2850392f-fab1-40fd-8487-91216a8fdd76
-# ╟─fba37538-ce55-48e4-979a-e3cf9a6be6cd
-# ╟─b644b63e-352e-4f55-9d03-03d6cb96ec3d
-# ╠═39fb7d5c-529f-4e25-95cd-46394b84cb8c
-# ╟─2430fca4-d88f-4a3e-9129-19f163e7d83a
-# ╟─c68d5652-0220-47d5-b92d-06b1f8c25e2e
-# ╠═ad1824f7-a52d-4eae-a6fc-c7c04ccb00b0
-# ╟─906c97c1-136b-4df9-929d-7db6c289cd5b
-# ╠═4df4ef08-ba83-48f0-b410-1bff7ed471ad
-# ╠═7a14e675-594a-47b4-b9f4-b20ddc5ab515
-# ╠═465ba3c5-4346-4d8e-8f0d-760096e5f628
-# ╠═ff42c12d-3a2d-4e62-9481-1415f7a88647
-# ╟─d60661ba-1c1b-4daf-8ae6-df1ebb666f35
-# ╟─83f412fa-7c1a-4484-9bbf-bc0287cbe5f7
-# ╟─0265c5cf-f768-45c4-aad8-f399e23d3703
-# ╠═79ff10e9-0573-44c4-8141-560e84e5978c
-# ╠═c0270e0b-0f65-43b5-b2d0-e7a5483fa699
-# ╠═dd1f1b74-9bfa-47f7-a1f5-f1a56c03f787
-# ╟─63523b55-c791-42e5-b3b2-9d03b11e7e2c
-# ╠═dbdb09f8-80ce-48c0-8c06-57e0d70bf0fa
-# ╠═3944d762-8c63-4188-9aef-e26236474fca
-# ╟─88259ae8-a88d-48f0-9660-96a4b00cde35
-# ╠═cd088296-e6e4-445e-8600-5ebcb5ec6b88
-# ╟─fb473e24-e6ee-4835-871d-e33210829d5e
-# ╟─832e20b0-2106-4c09-8a1c-cbf4faa9ea52
+# ╠═506afd55-e65e-4781-b405-61f9ba935d6c
+# ╠═7fefbffc-1dbc-42fe-879e-3868db9af411
+# ╠═400e257a-d9dc-422e-9eb2-f614261e71dd
+# ╠═b78f6455-4aad-49b4-9460-f11ac7b2efc7
+# ╟─255833a6-4adc-4360-8916-01d477106c26
+# ╠═b0438740-c67e-4392-a278-097ce0e402d1
 # ╠═f38ffad8-65ca-41ef-afc2-ae292e2a71ce
 # ╟─d59ea3e9-e374-4e80-aee6-3c4878745f0d
 # ╟─d8003147-45a6-4b8f-960e-70bc80f8cb69
