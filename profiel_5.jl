@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.15.1
 
 using Markdown
 using InteractiveUtils
@@ -59,7 +59,7 @@ ligger = (
 
 # ╔═╡ ba610d7b-89bf-4ed7-b4b5-4753e9ebc28d
 kolom = (
-	naam = "SHS 120/6.3",
+	naam = "SHS 120/6.3",
 	kwaliteit = "S235"
 )
 
@@ -177,10 +177,13 @@ md"Definieer in onderstaande tabel de verschillende combinaties. Voor **GGT** wo
 # ╔═╡ 9369fece-8b5e-4817-aee3-3476d43e1c2c
 combinaties = DataFrame([
 	(check=:GGT, naam="p1", formule="g1 + gp + 0.5 * q1_vloer"),
+	(check=:GGT_K, naam="p1", formule="g1 + gp + q1_vloer + 0.5 * q1_sneeuw"),
 	(check=:UGT, naam="p1", formule="1.35 * (g1 + gp) + 1.5 * (q1_vloer + 0.5 * q1_sneeuw)"),
 	(check=:GGT, naam="p2", formule="g2 + gp + 0.5 * q2_vloer"),
+	(check=:GGT_K, naam="p2", formule="g2 + gp + q2_vloer + 0.5 * q1_sneeuw"),
 	(check=:UGT, naam="p2", formule="1.35 * (g2 + gp) + 1.5 * (q2_vloer + 0.5 * q2_sneeuw)"), 
-	(check=:GGT, naam="F", formule="p12ggt"),
+	(check=:GGT, naam="F", formule="p12ggt_f"),
+	(check=:GGT_K, naam="F", formule="p12ggt_k"),
 	(check=:UGT, naam="F", formule="p12ugt"),
 ])
 
@@ -402,8 +405,9 @@ belastingsgevallen = DataFrame([
 	(naam="q2_vloer", waarde=(0.18 * opp_kamer3 * 2.0) * verh_m15_2, beschrijving="Var. last - nuttige overlast"),
 	(naam="q1_sneeuw", waarde=(4.01) * verh_m13_1, beschrijving="Var. last - sneeuwlast"),
 	(naam="q2_sneeuw", waarde=(4.01) * verh_m15_2, beschrijving="Var. last - sneeuwlast"),
-	(naam="p12ggt", waarde=124.729, beschrijving="GGT - Afdracht profiel 1 & 2"),
-	(naam="p12ugt", waarde=213.312, beschrijving="UGT - Afdracht profiel 1 & 2")
+	(naam="p12ggt_f", waarde=74.355 + 50.374, beschrijving="GGT Frequent - Afdracht profiel 1 & 2"),
+	(naam="p12ggt_k", waarde=90.454 + 61.904, beschrijving="GGT Karakteristiek - Afdracht profiel 1 & 2"),
+	(naam="p12ugt", waarde=126.405 + 86.907, beschrijving="UGT - Afdracht profiel 1 & 2")
 ])
 
 # ╔═╡ 8c7359a5-4daf-4c6e-b92a-75b96636b26c
@@ -1114,6 +1118,20 @@ rvw_volledig = DataFrames.flatten(
 		) => :R3
 	),
 	:R3
+)
+
+# ╔═╡ 55d0e969-8b75-4582-9e11-dc88dc4c5f8e
+combine(
+	groupby(
+		select(rvw_volledig, :,
+			AsTable(DataFrames.Not(:check)) => 
+				ByRow(r -> [R1, R2] .|> f -> f(Dict(keys(r) .|> eval .=> values(r))...) |> rnd) => [:R1, :R2]
+		), 
+		:check
+	),
+	:R1 => maximum,
+	:R2 => maximum,
+	:R3 => minimum
 )
 
 # ╔═╡ b91ad51c-f9f7-4236-8040-1959533f1793
@@ -2964,6 +2982,7 @@ version = "0.9.1+5"
 # ╟─e5f707ce-54ad-466e-b6a6-29ad77168590
 # ╟─8703a7d1-2838-4c98-8b93-1d4af8cf2b21
 # ╟─542f69ac-77c5-47d7-be6c-94ba82a50ef7
+# ╟─55d0e969-8b75-4582-9e11-dc88dc4c5f8e
 # ╟─6fd851f5-87f8-402c-ab64-004251404491
 # ╠═9364f897-0666-4ebe-9725-3c864db07b42
 # ╠═b93d2ce0-ac8a-4487-9d1d-0300db4a9df8

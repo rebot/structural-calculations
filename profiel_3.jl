@@ -59,7 +59,7 @@ ligger = (
 
 # ╔═╡ 08fc052c-201f-4851-beca-3ca42751fc88
 kolom = (
-	naam = "SHS 90/5",
+	naam = "SHS 90/5",
 	kwaliteit = "S235"
 )
 

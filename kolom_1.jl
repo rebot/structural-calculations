@@ -79,7 +79,7 @@ Profieldoorsnede
 
 # ╔═╡ 81d77b92-3499-451d-b485-b8378cdbf611
 kolom = (
-	naam = "SHS 140/5",
+	naam = "SHS 140/6.3",
 	kwaliteit = "S235",
 	beschrijving = "Kolom 1",
 	knikkromme = :a
@@ -88,7 +88,7 @@ kolom = (
 # ╔═╡ bf7ab900-ec7d-11eb-1a03-b5c7103e6e4c
 md"""
 # Berekening $(kolom[:beschrijving]) - $(kolom[:naam])
-Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1** en **Profiel 2** ondersteund en staat op de hoek van de kelder.
+Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1** en **Profiel 2** ondersteunt en staat op de hoek van de kelder.
 """
 
 # ╔═╡ 96b36181-5dd7-4b7f-b36c-b41c297aee4b
@@ -740,7 +740,7 @@ N_crz = N_cr
 
 # ╔═╡ aea467d4-6f7c-46fa-a8c2-d26dbf063892
 #M_cr = eig.Wpl * f_yk / 1000 # kNm - Kritisch moment; SHS niet kip gevoelig
-M_cr = C_1 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * ( sqrt((k_z / k_ω)^2 * (try eig.Iw * 103 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3) + (C_2 * z_g)^2) - C_2 * z_g)
+M_cr = C_1 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * ( sqrt((k_z / k_ω)^2 * (try eig.Iw * 10^3 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3) + (C_2 * z_g)^2) - C_2 * z_g)
 
 # ╔═╡ b83c760f-4caf-4fd2-860b-837a10c2c3ff
 λ_LT = sqrt( (eig.Wpl * f_yk) / M_cr / 1000 ) # relatieve slankheid
@@ -755,7 +755,7 @@ M_cr = C_1 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_s
 M_bRd = χ_LT * eig.Wpl * 10^3 * f_yk / γ_M1 / 10^6 # kNm 
 
 # ╔═╡ 5e620242-9ea3-4d4c-98ea-6712d4a10d60
-M_cr0 = 1.03 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * sqrt((k_z / k_ω)^2 * (try eig.Iw * 103 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3))
+M_cr0 = 1.03 * (π ^ 2 * ((try eig.Iz catch; eig.I end) * E * 10^-3)) / (k_z * L_steun)^2 * sqrt((k_z / k_ω)^2 * (try eig.Iw * 10^3 catch; 0 end) / (try eig.Iz catch; eig.I end) + (k_z * L_steun) ^2 * G * eig.IT / (π^2 * E * (try eig.Iz catch; eig.I end) * 10^3))
 
 # ╔═╡ d51b0bf5-14c7-403b-a825-f0c883a6cacb
 λ_LT0 = min(sqrt(eig.Wpl * f_yk / M_cr0 / 1000), 0.4) # §6.3.2.3 uit NBN EN 1993-1-1
@@ -2985,7 +2985,7 @@ version = "0.9.1+5"
 # ╟─ba4505b4-c35b-4a25-a59e-88738d0aee05
 # ╟─79deccb1-5aab-4bfd-857f-55b17250527c
 # ╟─49f763be-0741-4895-adcb-22efd0ad58e5
-# ╠═a012e4d2-d7db-44f0-95ff-800512b66fe0
+# ╟─a012e4d2-d7db-44f0-95ff-800512b66fe0
 # ╟─565c0a79-02ab-4f09-838b-a8d5be5b328e
 # ╟─da0eddc9-788d-4308-b458-54db04cd0fd2
 # ╠═77a710cf-318a-4fdf-b642-f1ec3ddd0e7f

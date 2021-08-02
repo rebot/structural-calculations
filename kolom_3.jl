@@ -20,7 +20,7 @@ using PlutoUI, ImageView, Images, Plots, SymPy, Luxor, SQLite, DataFrames, Under
 using UUIDs
 
 # ╔═╡ 5f090cf6-bf5d-4663-860c-d694b82ca64a
-situatieschets = load("./assets/img/profiel_3.jpg")
+situatieschets = load("./assets/img/profiel_5.jpg")
 
 # ╔═╡ 6fd93b12-b898-415c-93e1-5c3c6337bd9f
 md"""
@@ -69,7 +69,7 @@ De geometrie is af te lezen op de *situatieschets*.
 
 # ╔═╡ 2562daf7-66f5-4b9d-8b6e-9b50095d4dd3
 geom = (
-	L = 2.6, # m - verdiepingshoogte = 2.7m - 0.18 voor het profiel + 0.08cm uitgraving.
+	L = 2.9, # m - verdiepingshoogte = 2.7m - 0.22 voor het profiel + 0.38cm uitgr.
 )
 
 # ╔═╡ 2f321431-5f92-453c-bfb2-ce3c6f7f81a2
@@ -79,16 +79,16 @@ Profieldoorsnede
 
 # ╔═╡ 81d77b92-3499-451d-b485-b8378cdbf611
 kolom = (
-	naam = "SHS 90/4",
+	naam = "SHS 140/5",
 	kwaliteit = "S235",
-	beschrijving = "Kolom 2",
+	beschrijving = "Kolom 5",
 	knikkromme = :a
 )
 
 # ╔═╡ bf7ab900-ec7d-11eb-1a03-b5c7103e6e4c
 md"""
 # Berekening $(kolom[:beschrijving]) - $(kolom[:naam])
-Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 2** ondersteunt en staat op de rand van de kelderwand. Geen krachten van het dak worden afgeleid naar deze kolom.
+Berekening van **$(kolom[:beschrijving])**, de kolom die de liggers **Profiel 1**, **Profiel 2** en **Profiel 5** ondersteunt en staat voor de beglazing aan de achterijzde van de woning.
 """
 
 # ╔═╡ 96b36181-5dd7-4b7f-b36c-b41c297aee4b
@@ -129,9 +129,10 @@ Overzicht van de aangrijpende belastingen
 
 # ╔═╡ 6967230f-8e86-48d7-affb-8f537f50b053
 gevallen = DataFrame([
-	(naam="GGT1", waarde=67.3065, beschrijving="Afdracht profiel 3 - lasten GGT Frequent"),
-	(naam="GGT_K1", waarde=70.7605, beschrijving="Afdracht profiel 3 - lasten GGT Karakteristiek"),
-	(naam="UGT1", waarde=96.5629, beschrijving="Afdracht profiel 3 - lasten UGT"),
+	(naam="GGT_F", waarde=196.122, beschrijving="Afdracht profiel 5 - lasten GGT Frequent"),
+	(naam="GGT_K", waarde=234.511, beschrijving="Afdracht profiel 5 - lasten GGT Karakteristiek"),
+	(naam="UGT", waarde=328.105, beschrijving="Afdracht profiel 5 - lasten UGT"),
+
 ])
 
 # ╔═╡ 1402febf-ba8c-475a-8f23-a916d8d9815b
@@ -140,9 +141,9 @@ replacer = (g = gevallen; Regex(join(g.naam, "|")) => s -> g.waarde[g.naam .== s
 # ╔═╡ 650a4e73-0ff4-4ab2-be22-70143654aa57
 combinaties = select!(
 	DataFrame([
-		(check=:GGT, naam="F", formule="GGT1"),
-		(check=:GGT_K, naam="F", formule="GGT_K1"),
-		(check=:UGT, naam="F", formule="UGT1")
+		(check=:GGT, naam="F", formule="GGT_F"),
+		(check=:GGT_K, naam="F", formule="GGT_K"),
+		(check=:UGT, naam="F", formule="UGT")
 	]), 
 	:, 
 	:formule => 
@@ -173,7 +174,7 @@ md"""
 ## Berekening
 Berekening van de aangrijpende krachtswerking
 
-Controle toepasbaarheid *1ste orderberekening* waar $F_{cr}$ de elastiche kritieke (knik)belasting en $F_{Ed}$ de rekenwaarde van de belastingen
+Controle toepasbaarheid *1ste orderberekening* waard $F_{cr}$ de elastiche kritieke (knik)belasting en $F_{Ed}$ de rekenwaarde van de belastingen
 
 $$\alpha_{cr} = \dfrac{F_{cr}}{F_{Ed}} \geq 10 - \text{elastische berekening}$$
 $$\alpha_{cr} = \dfrac{F_{cr}}{F_{Ed}} \geq 15 - \text{plastische berekening}$$
@@ -463,7 +464,7 @@ In geval van de berekening van de kolommen, nemen we altijd een **positieve** wa
 """
 
 # ╔═╡ ebd5559c-ca01-436e-a6ac-c333349a376f
-C_1 = 1.5 # Zie volgende figuur
+C_1 = 1.55 # Zie volgende figuur
 
 # ╔═╡ a02a69c2-5250-476f-801b-f62443e42615
 C_2 = 0.18 # Zie volgende figuur
