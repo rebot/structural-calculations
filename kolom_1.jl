@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.1
+# v0.16.0
 
 using Markdown
 using InteractiveUtils
@@ -79,7 +79,7 @@ Profieldoorsnede
 
 # ╔═╡ 81d77b92-3499-451d-b485-b8378cdbf611
 kolom = (
-	naam = "SHS 140/6.3",
+	naam = "SHS 140/6.3",
 	kwaliteit = "S235",
 	beschrijving = "Kolom 1",
 	knikkromme = :a
