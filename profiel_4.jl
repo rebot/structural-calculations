@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.15.0
+# v0.16.0
 
 using Markdown
 using InteractiveUtils
@@ -29,7 +29,7 @@ De krachtsafdracht is bepaald voor volgende indeling. In de lastendaling zijn de
 # ╔═╡ c6f5a862-cae1-4e9c-a905-72a4122c11a7
 md"""
 !!! danger "Controleer de lastendaling"
-	Alvorens het rekenblad verder aan te vullen, is het belangrijk dat met de correcte uitgangspunten gewerkt wordt. Controleer aldus je resulterende krachten. Bekijk in de lastendaling of de **nuttige last** van $200 kN/m^2$ werd meegenomen, alsook de sneeuwlast en in welke situatie (*oud* of *nieuw*) de lasten zijn doorgerekend.
+	Alvorens het rekenblad verder aan te vullen, is het belangrijk dat met de correcte uitgangspunten gewerkt wordt. Controleer aldus je resulterende krachten. Bekijk in de lastendaling of de **nuttige last** van $2 kN/m^2$ werd meegenomen, alsook de sneeuwlast en in welke situatie (*oud* of *nieuw*) de lasten zijn doorgerekend.
 """
 
 # ╔═╡ 6a04789a-c42a-4ac9-8d05-ee20442ad60d
