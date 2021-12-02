@@ -62,6 +62,10 @@ Kolom 2 komt op de rand van de kelder te staan. Vooralleer deze kolom geplaatst 
 
 Ga naar [Berekening Kolom 2](./pages/kolom_2.html)
 
-### Kolom 3 - SHS 
+### Kolom 3 - SHS 140/5 (S235) -  L = ca. 2,900m
+
+Ter hoogte van deze kolom komen de profieln 1, 2 en 5 samen. De profielen 1 & 2 worden d.m.v. een boutverbinding vast gemaakt aan de ligger die opzich steunt op de kolom.  
+
+Ga naar [Berekening Kolom 3](./pages/kolom_3.html)
 
 
