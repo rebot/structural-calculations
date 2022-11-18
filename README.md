@@ -68,4 +68,6 @@ Ter hoogte van deze kolom komen de profieln 1, 2 en 5 samen. De profielen 1 & 2 
 
 Ga naar [Berekening Kolom 3](./pages/kolom_3.html)
 
+## Installatie
 
+Installeer zowel `Pluto.jl` als `SQLite.jl`
